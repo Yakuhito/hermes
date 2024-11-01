@@ -88,15 +88,6 @@ mod tests {
         ;; ));
          */
         let type_hash = keccak256(b"EIP712Domain(string name,bytes32 salt)");
-        // let name_hash = keccak256("Chia Coin Spend".as_bytes());
-        // let salt = H256::from(hex!(
-        //     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        // ));
-
-        // let mut to_hash = Vec::new();
-        // to_hash.extend_from_slice(&type_hash);
-        // to_hash.extend_from_slice(&name_hash);
-        // to_hash.extend_from_slice(salt.as_bytes());
         let domain_separator = keccak256(ethers::abi::encode(&[
             ethers::abi::Token::FixedBytes(type_hash.to_vec()),
             ethers::abi::Token::FixedBytes(keccak256("Chia Coin Spend").to_vec()),
