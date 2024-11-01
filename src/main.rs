@@ -73,14 +73,22 @@ fn main() {
 
     println!("Spending the coin...");
 
-    // let coin_spend = layer.construct_coin_spend(
-    //     ctx,
-    //     coin,
-    //     P2Eip712MessageSolution {
-    //         my_id: coin.coin_id(),
-    //         signature: signature.to_vec().into(),
-    //         delegated_puzzle: delegated_puzzle_ptr,
-    //         delegated_solution: delegated_solution_ptr,
-    //     },
-    // )
+    let coin_spend = layer
+        .construct_coin_spend(
+            ctx,
+            coin,
+            P2Eip712MessageSolution {
+                my_id: coin.coin_id(),
+                signature: signature.to_vec().into(),
+                delegated_puzzle: delegated_puzzle_ptr,
+                delegated_solution: delegated_solution_ptr,
+            },
+        )
+        .unwrap();
+
+    ctx.insert(coin_spend);
+
+    sim.spend_coins(ctx.take(), &[]).unwrap();
+
+    println!("Spend successful! Yay!");
 }
