@@ -1,5 +1,5 @@
 use chia::{
-    clvm_traits::{FromClvm, ToClvm},
+    clvm_traits::{self, FromClvm, ToClvm},
     clvm_utils::{CurriedProgram, TreeHash},
     protocol::{Bytes, Bytes32},
 };
@@ -139,7 +139,7 @@ impl Layer for P2Eip712MessageLayer {
 mod tests {
     use super::*;
     use chia::consensus::consensus_constants::TEST_CONSTANTS;
-    use chia_traits::Streamable;
+    use chia::traits::Streamable;
     use chia_wallet_sdk::{Conditions, Simulator};
     use clvm_traits::clvm_quote;
     use ecdsa::signature::hazmat::PrehashSigner;

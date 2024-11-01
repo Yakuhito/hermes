@@ -489,9 +489,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chia",
- "chia-traits 0.15.0",
  "chia-wallet-sdk",
- "clvm-traits",
  "clvmr",
  "ecdsa",
  "ethers",
@@ -537,7 +535,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-client"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "chia-protocol",
  "chia-sdk-types",
@@ -554,7 +552,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-derive"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "convert_case",
  "quote",
@@ -564,7 +562,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-driver"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-protocol",
@@ -582,7 +580,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-offers"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "bech32",
  "chia-bls 0.15.0",
@@ -603,7 +601,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-signer"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-consensus",
@@ -617,7 +615,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-test"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "anyhow",
  "bip39",
@@ -648,7 +646,7 @@ dependencies = [
 [[package]]
 name = "chia-sdk-types"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-consensus",
@@ -708,7 +706,7 @@ dependencies = [
 [[package]]
 name = "chia-wallet-sdk"
 version = "0.17.0"
-source = "git+https://github.com/Rigidity/chia-wallet-sdk.git?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
 dependencies = [
  "bech32",
  "chia-protocol",
@@ -4233,7 +4231,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4568,8 +4566,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "chia-wallet-sdk"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=1ee8fce668c3a81bda08a261f846671f5c8d4a33#1ee8fce668c3a81bda08a261f846671f5c8d4a33"
