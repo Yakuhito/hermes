@@ -34,7 +34,6 @@
     DOMAIN_TYPE_HASH
     ADDRESS
     my_id
-    address_end
     pubkey
     signature
     delegated_puzzle
@@ -46,7 +45,7 @@
     (if (all
             (= ADDRESS (substr (keccak256 pubkey) 12 32))
             (secp256k1_verify  
-                (concat ADDRESS address_end) ; pubkey
+                pubkey
                 (keccak256
                     PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
                     (keccak256

@@ -1,12 +1,16 @@
-use chia::clvm_utils::TreeHash;
-use chia_wallet_sdk::{DriverError, SpendContext};
+use chia::{
+    clvm_utils::TreeHash,
+    protocol::{Bytes32, Coin},
+    puzzles::standard::StandardSolution,
+};
+use chia_wallet_sdk::{Conditions, DriverError, Spend, SpendContext};
 use clvmr::NodePtr;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 234] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff81bf80ffff010cffff01208080ffff8413d61f00ffff0eff17ff5f80ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff8202ffff808080808080ff82017f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff8202ffff8205ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 226] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff5f80ffff010cffff01208080ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff82017fff808080808080ff81bf8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff82017fff8202ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    76b33566c2f473e69e6eecbacc9138e1d10f46c1607545aeab8f9a30b6c394e2
+    d96d95b0e5184e43dd135297b385afdd39ecbbba6e16fc9240b9d3089a932360
     "
 ));
 
@@ -19,6 +23,121 @@ impl SpendContextExt for SpendContext {
         self.puzzle(P2_EIP712_MESSAGE_PUZZLE_HASH, &P2_EIP712_MESSAGE_PUZZLE)
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct P2Eip712MessageLayer {
+    pub genesis_challenge: Bytes32,
+    pub address: [u8; 20],
+}
+
+// #[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+// #[clvm(solution)]
+// pub struct StandardSolution<P, S> {
+//     pub original_public_key: Option<PublicKey>,
+//     pub delegated_puzzle: P,
+//     pub solution: S,
+// }
+
+// impl P2Eip712MessageLayer {
+//     pub fn new(genesis_challenge: Bytes32, address: [u8; 20]) -> Self {
+//         Self {
+//             genesis_challenge,
+//             address,
+//         }
+//     }
+
+//     pub fn spend(
+//         &self,
+//         ctx: &mut SpendContext,
+//         coin: Coin,
+//         conditions: Conditions,
+//     ) -> Result<(), DriverError> {
+//         let spend = self.spend_with_conditions(ctx, conditions)?;
+//         ctx.spend(coin, spend)
+//     }
+
+//     pub fn delegated_inner_spend(
+//         &self,
+//         ctx: &mut SpendContext,
+//         spend: Spend,
+//     ) -> Result<Spend, DriverError> {
+//         self.construct_spend(
+//             ctx,
+//             StandardSolution {
+//                 original_public_key: None,
+//                 delegated_puzzle: spend.puzzle,
+//                 solution: spend.solution,
+//             },
+//         )
+//     }
+// }
+
+// impl Layer for StandardLayer {
+//     type Solution = StandardSolution<NodePtr, NodePtr>;
+
+//     fn construct_puzzle(&self, ctx: &mut SpendContext) -> Result<NodePtr, DriverError> {
+//         let curried = CurriedProgram {
+//             program: ctx.standard_puzzle()?,
+//             args: StandardArgs::new(self.synthetic_key),
+//         };
+//         ctx.alloc(&curried)
+//     }
+
+//     fn construct_solution(
+//         &self,
+//         ctx: &mut SpendContext,
+//         solution: Self::Solution,
+//     ) -> Result<NodePtr, DriverError> {
+//         ctx.alloc(&solution)
+//     }
+
+//     fn parse_puzzle(allocator: &Allocator, puzzle: Puzzle) -> Result<Option<Self>, DriverError> {
+//         let Some(puzzle) = puzzle.as_curried() else {
+//             return Ok(None);
+//         };
+
+//         if puzzle.mod_hash != STANDARD_PUZZLE_HASH {
+//             return Ok(None);
+//         }
+
+//         let args = StandardArgs::from_clvm(allocator, puzzle.args)?;
+
+//         Ok(Some(Self {
+//             synthetic_key: args.synthetic_key,
+//         }))
+//     }
+
+//     fn parse_solution(
+//         allocator: &Allocator,
+//         solution: NodePtr,
+//     ) -> Result<Self::Solution, DriverError> {
+//         Ok(StandardSolution::from_clvm(allocator, solution)?)
+//     }
+// }
+
+// impl SpendWithConditions for StandardLayer {
+//     fn spend_with_conditions(
+//         &self,
+//         ctx: &mut SpendContext,
+//         conditions: Conditions,
+//     ) -> Result<Spend, DriverError> {
+//         let delegated_puzzle = ctx.alloc(&clvm_quote!(conditions))?;
+//         self.construct_spend(
+//             ctx,
+//             StandardSolution {
+//                 original_public_key: None,
+//                 delegated_puzzle,
+//                 solution: NodePtr::NIL,
+//             },
+//         )
+//     }
+// }
+
+// impl ToTreeHash for StandardLayer {
+//     fn tree_hash(&self) -> TreeHash {
+//         StandardArgs::curry_tree_hash(self.synthetic_key)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
