@@ -224,8 +224,6 @@ mod tests {
             coin.coin_id(),
             ctx.tree_hash(delegated_puzzle_ptr).into(),
         );
-        // let signature_og = wallet.sign_hash(H256(hash_to_sign.to_vec().try_into().unwrap()))?;
-        // let signature: EthSignatureBytes = signature_og.to_vec().try_inign.to_vec().try_into().unwrap()))?;
 
         let signature_og: K1Signature = wallet.signer().sign_prehash(&hash_to_sign.to_vec())?;
         let signature: EthSignatureBytes = signature_og.to_vec().try_into().unwrap();
@@ -244,6 +242,7 @@ mod tests {
 
         println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
         println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
+        println!("coin id: {:}", coin_spend.coin.coin_id());
         ctx.insert(coin_spend);
 
         let verifier =
