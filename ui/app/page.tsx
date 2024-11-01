@@ -56,23 +56,32 @@ export default function Home() {
           <button
             className="mt-2 px-4 py-2 w-64 border-2 border-green-500 hover:bg-green-500 hover:text-black font-medium rounded-xl text-green-500"
             onClick={async () => {
+              let domain =  {
+                name: "Chia Coin Spend",
+                salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              };
+              let types = {
+                ChiaCoinSpend: [
+                  {name: "coin_id", type: "bytes32"},
+                  {name: "delegated_puzzle_hash", type: "bytes32"}
+                ]
+              };
+              let message = {
+                coin_id: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`,
+                delegated_puzzle_hash: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`
+              };
               let sig = await signTypedDataAsync({
                 domain: {
                   name: "Chia Coin Spend",
                   salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 },
-                types: {
-                  ChiaCoinSpend: [
-                    {name: "coin_id", type: "bytes32"},
-                    {name: "delegated_puzzle_hash", type: "bytes32"}
-                  ]
-                },
+                types,
                 primaryType: "ChiaCoinSpend",
-                message: {
-                  coin_id: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`,
-                  delegated_puzzle_hash: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`
-                }
+                message,
               })
+              const msgHash = _TypedDataEncoder.hash(domain, types, message);
+
+              console.log({ msgHash, sig})
 
               setSig(sig)
             }}
