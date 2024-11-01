@@ -23,6 +23,11 @@ impl SpendContextExt for SpendContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethers::core::rand::thread_rng;
+    use ethers::prelude::*;
+    use ethers::signers::{LocalWallet, Signer};
+    use hex::encode;
+    use k256::ecdsa::SigningKey;
 
     // we really have to expose this in chia-sdk-test
     macro_rules! assert_puzzle_hash {
@@ -37,6 +42,35 @@ mod tests {
     #[test]
     fn test_puzzle_hashes() -> anyhow::Result<()> {
         assert_puzzle_hash!(P2_EIP712_MESSAGE_PUZZLE => P2_EIP712_MESSAGE_PUZZLE_HASH);
+
+        Ok(())
+    }
+    use tiny_keccak::{Hasher, Keccak};
+
+    #[test]
+    fn test_thing() -> anyhow::Result<()> {
+        let signing_key = SigningKey::random(&mut thread_rng());
+        let wallet: LocalWallet = signing_key.into();
+
+        let address = wallet.address();
+        let public_key = wallet.signer().verifying_key();
+        println!("Address: {:?}", address);
+
+        // compute keccak256 of pub key (sanity check)
+        let uncompressed_pub_key = public_key.clone().to_encoded_point(false);
+        let uncompressed_pub_key = uncompressed_pub_key.as_bytes();
+        println!("Public Key: 0x{:}", encode(public_key.to_sec1_bytes()));
+        let mut keccak = Keccak::v256();
+        let mut output = [0u8; 32];
+        keccak.update(&uncompressed_pub_key[1..]); // Skip the '04' prefix
+        keccak.finalize(&mut output);
+
+        let pub_key_hash = &output[12..];
+        println!("keccak256(Public Key): 0x{:}", encode(output));
+        assert_eq!(
+            format!("{:?}", address),
+            format!("0x{:}", encode(pub_key_hash))
+        );
 
         Ok(())
     }

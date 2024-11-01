@@ -6,8 +6,10 @@ edition = "2021"
 [dependencies]
 hex-literal = "0.4.1"
 chia = "0.15.0"
-ethers = "2.0"
-k256 = "0.10"
+ethers = "2.0.14"
+k256 = "0.13.4"
+hex = "0.4.3"
+tiny-keccak = "2.0.2"
 
 clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "2f413e72fcf1bcafa4a3117f2c2a0a3a0e7e1c6b" }
 chia-wallet-sdk = { git = "https://github.com/Rigidity/chia-wallet-sdk.git", rev = "1ee8fce668c3a81bda08a261f846671f5c8d4a33"}

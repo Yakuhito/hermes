@@ -35,6 +35,7 @@
     ADDRESS
     my_id
     address_end
+    pubkey
     signature
     delegated_puzzle
     delegated_solution
@@ -42,23 +43,26 @@
     (include condition_codes.clib)
     (include sha256tree.clib)
 
-    (if (secp256k1_verify  
-            (concat ADDRESS address_end) ; pubkey
-            (keccak256
-                PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
+    (if (all
+            (= ADDRESS (substr (keccak256 pubkey) 12 32))
+            (secp256k1_verify  
+                (concat ADDRESS address_end) ; pubkey
                 (keccak256
-                    DOMAIN_TYPE_HASH
-                    my_id ; coin_id
-                    (sha256tree delegated_puzzle) ; delegated_puzzle_hash
-                ) ; messageHash
-            ) ; message digest
-            signature ; duh
+                    PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
+                    (keccak256
+                        DOMAIN_TYPE_HASH
+                        my_id ; coin_id
+                        (sha256tree delegated_puzzle) ; delegated_puzzle_hash
+                    ) ; messageHash
+                ) ; message digest
+                signature ; duh
+            )
         )
         (c
             (list ASSERT_MY_COIN_ID my_id)
             (a delegated_puzzle delegated_solution)
         )
         ; else
-        (x)
+        (x "nope")
     )
 )
