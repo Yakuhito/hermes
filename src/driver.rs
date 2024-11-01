@@ -8,10 +8,10 @@ use clvmr::{Allocator, NodePtr};
 use ethers::utils::keccak256;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 268] = hex!("ff02ffff01ff02ffff03ffff22ffff20ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff0effff04ff02ffff04ff82017fff808080808080ff81bf808080ffff01ff04ffff04ff04ffff04ff2fff808080ffff04ffff04ff0affff04ff17ff808080ffff04ffff04ff0affff04ffff3eff5f80ff808080ffff04ffff04ff0affff04ffff3effff0cff5fffff01018080ff808080ff8080808080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff01ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff0effff04ff02ffff04ff09ff80808080ffff02ff0effff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 286] = hex!("ff02ffff01ff02ffff03ffff22ffff20ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff0effff04ff02ffff04ff82017fff808080808080ff81bf808080ffff01ff04ffff04ff04ffff04ff2fff808080ffff04ffff04ff0affff04ff17ff808080ffff04ffff04ff0affff04ff5fff808080ffff04ffff04ff0affff04ffff3eff5f80ff808080ffff04ffff04ff0affff04ffff3effff0cff5fffff01018080ff808080ff808080808080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff01ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff0effff04ff02ffff04ff09ff80808080ffff02ff0effff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    b94a3dee4c29f427f4ac880a20bd4bdbe56aafcb885001cd71d3ae5d1f78eea2
+    f5585732c039fcf1077e6ca40c455c32ffe8b3fb38f1ac9d95e8c347dfa3be97
     "
 ));
 
@@ -214,12 +214,18 @@ mod tests {
         println!("Public Key: 0x{:}", encode(public_key.to_sec1_bytes()));
         let output = keccak256(&uncompressed_pub_key[1..]);
 
+        println!("uncompressed_pub_key: {:?}", encode(uncompressed_pub_key));
+        println!("given pub key: {:?}", encode(public_key.to_sec1_bytes()));
+
         let pub_key_hash = &output[12..];
         // println!("keccak256(Public Key): 0x{:}", encode(output));
         assert_eq!(
             format!("{:?}", address),
             format!("0x{:}", encode(pub_key_hash))
         );
+        println!("address: {:?}", address);
+        println!("pub_key_hash: {:?}", encode(output));
+        println!("address from key hash: {:?}", encode(pub_key_hash));
 
         // actual test
         let ctx = &mut SpendContext::new();

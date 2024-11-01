@@ -64,6 +64,7 @@
         (list
             (list ASSERT_MY_COIN_ID my_id)
             (list REMARK ADDRESS)
+            (list REMARK pubkey)
             (list REMARK (keccak256 pubkey))
             (list REMARK (keccak256 (substr pubkey 1)))
         )
