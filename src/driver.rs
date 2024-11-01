@@ -1,7 +1,7 @@
 use chia::{
     clvm_traits::{FromClvm, ToClvm},
     clvm_utils::{CurriedProgram, TreeHash},
-    protocol::Bytes32,
+    protocol::{Bytes, Bytes32},
 };
 use chia_wallet_sdk::{DriverError, Layer, Puzzle, Spend, SpendContext};
 use clvmr::{Allocator, NodePtr};
@@ -26,7 +26,7 @@ impl SpendContextExt for SpendContext {
 }
 
 type AddressBytes = [u8; 20];
-type EthPubkeyBytes = [u8; 64];
+type EthPubkeyBytes = [u8; 65];
 type EthSignatureBytes = [u8; 65];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,20 +35,20 @@ pub struct P2Eip712MessageLayer {
     pub address: AddressBytes,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvm, FromClvm)]
 #[clvm(curry)]
 pub struct P2Eip712MessageArgs {
-    pub prefix_and_domain_separator: [u8; 34],
+    pub prefix_and_domain_separator: Bytes,
     pub type_hash: Bytes32,
-    pub address: AddressBytes,
+    pub address: Bytes,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+#[derive(Debug, Clone, PartialEq, Eq, ToClvm, FromClvm)]
 #[clvm(solution)]
 pub struct P2Eip712MessageSolution<P, S> {
     pub my_id: Bytes32,
-    pub pubkey: EthPubkeyBytes,
-    pub signature: EthSignatureBytes,
+    pub pubkey: Bytes,
+    pub signature: Bytes,
     pub delegated_puzzle: P,
     pub delegated_solution: S,
 }
@@ -73,8 +73,8 @@ impl P2Eip712MessageLayer {
             ctx,
             P2Eip712MessageSolution {
                 my_id,
-                pubkey,
-                signature,
+                pubkey: Bytes::new(pubkey.to_vec()),
+                signature: Bytes::new(signature.to_vec()),
                 delegated_puzzle: delegated_spend.puzzle,
                 delegated_solution: delegated_spend.solution,
             },
@@ -112,9 +112,9 @@ impl Layer for P2Eip712MessageLayer {
         let curried = CurriedProgram {
             program: ctx.p2_eip712_message_puzzle()?,
             args: P2Eip712MessageArgs {
-                prefix_and_domain_separator: self.prefix_and_domain_separator(),
+                prefix_and_domain_separator: self.prefix_and_domain_separator().to_vec().into(),
                 type_hash: self.type_hash(),
-                address: self.address,
+                address: self.address.to_vec().into(),
             },
         };
         ctx.alloc(&curried)
@@ -142,6 +142,10 @@ impl Layer for P2Eip712MessageLayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chia::consensus::consensus_constants::TEST_CONSTANTS;
+    use chia_traits::Streamable;
+    use chia_wallet_sdk::{Conditions, Simulator};
+    use clvm_traits::clvm_quote;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
     use ethers::signers::{LocalWallet, Signer};
@@ -202,7 +206,7 @@ mod tests {
         println!("Address: {:?}", address);
 
         // compute keccak256 of pub key (sanity check)
-        let uncompressed_pub_key = public_key.clone().to_encoded_point(false);
+        let uncompressed_pub_key = public_key.to_encoded_point(false);
         let uncompressed_pub_key = uncompressed_pub_key.as_bytes();
         println!("Public Key: 0x{:}", encode(public_key.to_sec1_bytes()));
         let output = keccak256(&uncompressed_pub_key[1..]);
@@ -214,62 +218,61 @@ mod tests {
             format!("0x{:}", encode(pub_key_hash))
         );
 
-        // test EIP-712 knowledge
-        println!("--");
+        // actual test
+        let ctx = &mut SpendContext::new();
+        let mut sim = Simulator::new();
 
-        let coin_id = keccak256(b"coin_id");
-        let delegated_puzzle_hash = keccak256(b"delegated_puzzle_hash");
-        println!("coin_id: 0x{:}", encode(coin_id));
-        println!(
-            "delegated_puzzle_hash: 0x{:}",
-            encode(delegated_puzzle_hash)
+        let address: AddressBytes = address.into();
+        let layer = P2Eip712MessageLayer::new(TEST_CONSTANTS.genesis_challenge, address);
+        let coin_puzzle_reveal = layer.construct_puzzle(ctx)?;
+        let coin_puzzle_hash = ctx.tree_hash(coin_puzzle_reveal);
+
+        let coin = sim.new_coin(coin_puzzle_hash.into(), 1337);
+
+        let delegated_puzzle_ptr =
+            clvm_quote!(Conditions::new().reserve_fee(1337)).to_clvm(&mut ctx.allocator)?;
+        let delegated_solution_ptr = ctx.allocator.nil();
+
+        let hash_to_sign = get_hash_to_sign(
+            &layer,
+            coin.coin_id(),
+            ctx.tree_hash(delegated_puzzle_ptr).into(),
         );
+        let signature = wallet.sign_hash(H256(hash_to_sign.to_vec().try_into().unwrap()))?;
+        let signature: EthSignatureBytes = signature.to_vec().try_into().unwrap();
 
-        /*
-        ;; bytes32 domainSeparator = keccak256(abi.encode(
-        ;;    keccak256("EIP712Domain(string name, bytes32 salt)"),
-        ;;    keccak256(bytes("Chia Coin Spend")),
-        ;;    salt
-        ;; ));
-         */
-        let type_hash = keccak256(b"EIP712Domain(string name,bytes32 salt)");
-        let domain_separator = keccak256(ethers::abi::encode(&[
-            ethers::abi::Token::FixedBytes(type_hash.to_vec()),
-            ethers::abi::Token::FixedBytes(keccak256("Chia Coin Spend").to_vec()),
-            ethers::abi::Token::FixedBytes(
-                hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").to_vec(),
-            ),
-        ]));
-
-        // let domain_separator = keccak256(&to_hash);
-        println!("Domain Separator: 0x{:}", encode(domain_separator));
-
-        /*
-        bytes32 messageHash = keccak256(abi.encode(
-            typeHash,
-            coin_id,
-            delegated_puzzle_hash
-        ));
-        */
-        let type_hash = keccak256(b"ChiaCoinSpend(bytes32 coin_id,bytes32 delegated_puzzle_hash)");
-        let mut to_hash = Vec::new();
-        to_hash.extend_from_slice(&type_hash);
-        to_hash.extend_from_slice(&coin_id);
-        to_hash.extend_from_slice(&delegated_puzzle_hash);
-
-        let message_hash = keccak256(&to_hash);
-        println!("hashStruct(message): 0x{:}", encode(message_hash));
-
-        let mut to_hash = Vec::new();
-        to_hash.extend_from_slice(&[0x19, 0x01]); // "\x19\x01",
-        to_hash.extend_from_slice(&domain_separator);
-        to_hash.extend_from_slice(&message_hash);
-
-        let hash_to_sign = keccak256(&to_hash);
         println!(
-            "Hash To Sign (hand-calculated): 0x{:}",
-            encode(hash_to_sign)
+            "Pub key: {:}",
+            encode(
+                wallet
+                    .signer()
+                    .verifying_key()
+                    .to_encoded_point(false)
+                    .as_bytes()
+            )
         );
+        let coin_spend = layer.construct_coin_spend(
+            ctx,
+            coin,
+            P2Eip712MessageSolution {
+                my_id: coin.coin_id(),
+                pubkey: wallet
+                    .signer()
+                    .verifying_key()
+                    .to_encoded_point(false)
+                    .as_bytes()
+                    .into(),
+                signature: signature.to_vec().into(),
+                delegated_puzzle: delegated_puzzle_ptr,
+                delegated_solution: delegated_solution_ptr,
+            },
+        )?;
+
+        println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
+        println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
+        ctx.insert(coin_spend);
+
+        sim.spend_coins(ctx.take(), &[])?;
 
         Ok(())
     }
