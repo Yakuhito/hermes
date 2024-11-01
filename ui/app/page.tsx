@@ -70,6 +70,10 @@ export default function Home() {
                 coin_id: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`,
                 delegated_puzzle_hash: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`
               };
+
+              const msgHash = _TypedDataEncoder.hash(domain, types, message);
+
+              console.log({ msgHash})
               let sig = await signTypedDataAsync({
                 domain: {
                   name: "Chia Coin Spend",
@@ -79,10 +83,8 @@ export default function Home() {
                 primaryType: "ChiaCoinSpend",
                 message,
               })
-              const msgHash = _TypedDataEncoder.hash(domain, types, message);
 
-              console.log({ msgHash, sig})
-
+              console.log({ sig })
               setSig(sig)
             }}
           >Generate sig</button>
