@@ -89,6 +89,11 @@ mod tests {
 
         let coin_id = keccak256(b"coin_id");
         let delegated_puzzle_hash = keccak256(b"delegated_puzzle_hash");
+        println!("coin_id: 0x{:}", encode(coin_id));
+        println!(
+            "delegated_puzzle_hash: 0x{:}",
+            encode(delegated_puzzle_hash)
+        );
 
         let msg = ChiaCoinSpend {
             coin_id: H256::from(coin_id),
