@@ -1,0 +1,64 @@
+; p2_eip712_message.clsp by yakuhito
+;; A replacement for the standard puzzle allowing coins to be controlled by EIP-712 messages
+
+;; The EIP-712 domain contains:
+;;   - name of the object being signed ("ChiaCoinSpend")
+;;   - salt (32-byte genesis challenge of the Chia network - i.e., testnet11/mainnet)
+;; The domain separator can then be computed off-chain as follows:
+;; bytes32 domainSeparator = keccak256(abi.encode(
+;;    keccak256("EIP712Domain(string name, bytes32 salt)"),
+;;    keccak256(bytes("ChiaCoinSpend")),
+;;    salt
+;; ));
+
+;; We can also compute type hash as:
+;; bytes32 typeHash = keccak256("ChiaCoinSpend(bytes32 coin_id, bytes32 delegated_puzzle_hash)");
+
+;; Per the EIP-712 spec, the hash that is actually signed can be obtained as:
+;; bytes32 messageHash = keccak256(abi.encode(
+;;     typeHash,
+;;     coin_id,
+;;     delegated_puzzle_hash
+;; ));
+;; bytes32 hashToSign = keccak256(abi.encodePacked(
+;;     "\x19\x01",
+;;     domainSeparator,
+;;     messageHash
+;; ));
+
+;; Also note how awesome it is that we're passing bytes32 values to abi.encode, so we don't
+;; have to worry about padding.
+
+(mod (
+    PREFIX_AND_DOMAIN_SEPARATOR
+    DOMAIN_TYPE_HASH
+    ADDRESS
+    my_id
+    address_end
+    signature
+    delegated_puzzle
+    delegated_solution
+)
+    (include condition_codes.clib)
+    (include sha256tree.clib)
+
+    (if (secp256r1_verify  
+            (concat ADDRESS address_end) ; pubkey
+            (keccak256
+                PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
+                (keccak256
+                    DOMAIN_TYPE_HASH
+                    my_id ; coin_id
+                    (sha256tree delegated_puzzle) ; delegated_puzzle_hash
+                ) ; messageHash
+            ) ; message digest
+            signature ; duh
+        )
+        (c
+            (list ASSERT_MY_COIN_ID my_id)
+            (a delegated_puzzle delegated_solution)
+        )
+        ; else
+        (x)
+    )
+)
