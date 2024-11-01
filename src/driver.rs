@@ -8,10 +8,10 @@ use clvmr::{Allocator, NodePtr};
 use ethers::utils::keccak256;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 199] = hex!("ff02ffff01ff02ffff03ffff20ffff8413d61f00ffff01867075626b6579ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff81bfff808080808080ff5f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff81bfff82017f8080ffff01ff088080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 191] = hex!("ff02ffff01ff02ffff03ffff20ffff8413d61f00ff17ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff81bfff808080808080ff5f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff81bfff82017f8080ffff01ff088080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    603616a8eb541c625d29e712341d1be48762cfd53237f31d087280f5ee3d2ab5
+    7ffc39fd252c800c7208999bb1f284e2148464bf83a1d719d5b6da3db3a32c29
     "
 ));
 
@@ -200,16 +200,16 @@ mod tests {
         let signing_key = SigningKey::random(&mut thread_rng());
         let wallet: LocalWallet = signing_key.into();
 
-        let address = wallet.address();
-        println!("Address: {:?}", address);
-
         // actual test
         let ctx = &mut SpendContext::new();
         let mut sim = Simulator::new();
 
         let pubkey = wallet.signer().verifying_key().to_sec1_bytes().to_vec();
-        let layer =
-            P2Eip712MessageLayer::new(TEST_CONSTANTS.genesis_challenge, pubkey.try_into().unwrap());
+        println!("pubkey: {:?}", encode(pubkey.to_vec().clone()));
+        let layer = P2Eip712MessageLayer::new(
+            TEST_CONSTANTS.genesis_challenge,
+            pubkey.to_vec().try_into().unwrap(),
+        );
         let coin_puzzle_reveal = layer.construct_puzzle(ctx)?;
         let coin_puzzle_hash = ctx.tree_hash(coin_puzzle_reveal);
 
@@ -230,10 +230,7 @@ mod tests {
         let signature_og: K1Signature = wallet.signer().sign_prehash(&hash_to_sign.to_vec())?;
         let signature: EthSignatureBytes = signature_og.to_vec().try_into().unwrap();
 
-        println!(
-            "Pub key: {:}",
-            encode(wallet.signer().verifying_key().to_sec1_bytes())
-        );
+        println!("Coin id: {:}", coin.coin_id());
         let coin_spend = layer.construct_coin_spend(
             ctx,
             coin,
@@ -247,7 +244,6 @@ mod tests {
 
         println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
         println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
-        println!("signed hash: {:}", encode(hash_to_sign));
         ctx.insert(coin_spend);
 
         let verifier =

@@ -42,7 +42,7 @@
     (include sha256tree.clib)
 
     (if (not (secp256k1_verify  
-        pubkey
+        PUBKEY
         (keccak256
             PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
             (keccak256
