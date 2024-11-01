@@ -489,7 +489,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chia",
+ "chia-traits 0.15.0",
  "chia-wallet-sdk",
+ "clvm-traits",
  "clvmr",
  "ethers",
  "hex",

@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 hex-literal = "0.4.1"
 chia = "0.15.0"
+chia-traits = "0.15.0"
+clvm-traits = "0.15.0"
 ethers = { version = "2.0.14"}
 k256 = "0.13.4"
 hex = "0.4.3"

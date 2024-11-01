@@ -1,10 +1,12 @@
 use chia::{
-    clvm_utils::TreeHash,
+    clvm_traits::{FromClvm, ToClvm},
+    clvm_utils::{CurriedProgram, TreeHash},
     protocol::{Bytes32, Coin},
     puzzles::standard::StandardSolution,
 };
-use chia_wallet_sdk::{Conditions, DriverError, Spend, SpendContext};
-use clvmr::NodePtr;
+use chia_wallet_sdk::{Conditions, DriverError, Layer, Puzzle, Spend, SpendContext};
+use clvmr::{Allocator, NodePtr};
+use ethers::utils::keccak256;
 use hex_literal::hex;
 
 pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 226] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff5f80ffff010cffff01208080ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff82017fff808080808080ff81bf8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff82017fff8202ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
@@ -24,121 +26,124 @@ impl SpendContextExt for SpendContext {
     }
 }
 
+type AddressBytes = [u8; 20];
+type EthPubkeyBytes = [u8; 64];
+type EthSignatureBytes = [u8; 65];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P2Eip712MessageLayer {
     pub genesis_challenge: Bytes32,
-    pub address: [u8; 20],
+    pub address: AddressBytes,
 }
 
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
-// #[clvm(solution)]
-// pub struct StandardSolution<P, S> {
-//     pub original_public_key: Option<PublicKey>,
-//     pub delegated_puzzle: P,
-//     pub solution: S,
-// }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+#[clvm(curry)]
+pub struct P2Eip712MessageArgs {
+    pub prefix_and_domain_separator: [u8; 34],
+    pub domain_type_hash: Bytes32,
+    pub address: AddressBytes,
+}
 
-// impl P2Eip712MessageLayer {
-//     pub fn new(genesis_challenge: Bytes32, address: [u8; 20]) -> Self {
-//         Self {
-//             genesis_challenge,
-//             address,
-//         }
-//     }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+#[clvm(solution)]
+pub struct P2Eip712MessageSolution<P, S> {
+    pub my_id: Bytes32,
+    pub pubkey: EthPubkeyBytes,
+    pub signature: EthSignatureBytes,
+    pub delegated_puzzle: P,
+    pub delegated_solution: S,
+}
 
-//     pub fn spend(
-//         &self,
-//         ctx: &mut SpendContext,
-//         coin: Coin,
-//         conditions: Conditions,
-//     ) -> Result<(), DriverError> {
-//         let spend = self.spend_with_conditions(ctx, conditions)?;
-//         ctx.spend(coin, spend)
-//     }
+impl P2Eip712MessageLayer {
+    pub fn new(genesis_challenge: Bytes32, address: [u8; 20]) -> Self {
+        Self {
+            genesis_challenge,
+            address,
+        }
+    }
 
-//     pub fn delegated_inner_spend(
-//         &self,
-//         ctx: &mut SpendContext,
-//         spend: Spend,
-//     ) -> Result<Spend, DriverError> {
-//         self.construct_spend(
-//             ctx,
-//             StandardSolution {
-//                 original_public_key: None,
-//                 delegated_puzzle: spend.puzzle,
-//                 solution: spend.solution,
-//             },
-//         )
-//     }
-// }
+    pub fn spend(
+        &self,
+        ctx: &mut SpendContext,
+        coin: Coin,
+        conditions: Conditions,
+    ) -> Result<(), DriverError> {
+        let spend = self.spend_with_conditions(ctx, conditions)?;
+        ctx.spend(coin, spend)
+    }
 
-// impl Layer for StandardLayer {
-//     type Solution = StandardSolution<NodePtr, NodePtr>;
+    pub fn delegated_inner_spend(
+        &self,
+        ctx: &mut SpendContext,
+        spend: Spend,
+    ) -> Result<Spend, DriverError> {
+        self.construct_spend(
+            ctx,
+            StandardSolution {
+                original_public_key: None,
+                delegated_puzzle: spend.puzzle,
+                solution: spend.solution,
+            },
+        )
+    }
 
-//     fn construct_puzzle(&self, ctx: &mut SpendContext) -> Result<NodePtr, DriverError> {
-//         let curried = CurriedProgram {
-//             program: ctx.standard_puzzle()?,
-//             args: StandardArgs::new(self.synthetic_key),
-//         };
-//         ctx.alloc(&curried)
-//     }
+    pub fn domain_separator(&self) -> Bytes32 {
+        let type_hash = keccak256(b"EIP712Domain(string name,bytes32 salt)");
 
-//     fn construct_solution(
-//         &self,
-//         ctx: &mut SpendContext,
-//         solution: Self::Solution,
-//     ) -> Result<NodePtr, DriverError> {
-//         ctx.alloc(&solution)
-//     }
+        keccak256(ethers::abi::encode(&[
+            ethers::abi::Token::FixedBytes(type_hash.to_vec()),
+            ethers::abi::Token::FixedBytes(keccak256("Chia Coin Spend").to_vec()),
+            ethers::abi::Token::FixedBytes(self.genesis_challenge.to_vec()),
+        ]))
+        .into()
+    }
 
-//     fn parse_puzzle(allocator: &Allocator, puzzle: Puzzle) -> Result<Option<Self>, DriverError> {
-//         let Some(puzzle) = puzzle.as_curried() else {
-//             return Ok(None);
-//         };
+    pub fn prefix_and_domain_separator(&self) -> [u8; 34] {
+        let mut pads = Vec::new();
+        pads.extend_from_slice(&[0x19, 0x01]); // "\x19\x01",
+        pads.extend_from_slice(&self.domain_separator());
+        pads
+    }
 
-//         if puzzle.mod_hash != STANDARD_PUZZLE_HASH {
-//             return Ok(None);
-//         }
+    pub fn domain_type_hash(&self) -> Bytes32 {
+        keccak256(b"ChiaCoinSpend(bytes32 coin_id,bytes32 delegated_puzzle_hash)").into()
+    }
+}
 
-//         let args = StandardArgs::from_clvm(allocator, puzzle.args)?;
+impl Layer for P2Eip712MessageLayer {
+    type Solution = P2Eip712MessageSolution<NodePtr, NodePtr>;
 
-//         Ok(Some(Self {
-//             synthetic_key: args.synthetic_key,
-//         }))
-//     }
+    fn construct_puzzle(&self, ctx: &mut SpendContext) -> Result<NodePtr, DriverError> {
+        let curried = CurriedProgram {
+            program: ctx.p2_eip712_message_puzzle()?,
+            args: P2Eip712MessageArgs {
+                prefix_and_domain_separator: self.prefix_and_domain_separator(),
+                domain_type_hash: self.domain_type_hash(),
+                address: self.address,
+            },
+        };
+        ctx.alloc(&curried)
+    }
 
-//     fn parse_solution(
-//         allocator: &Allocator,
-//         solution: NodePtr,
-//     ) -> Result<Self::Solution, DriverError> {
-//         Ok(StandardSolution::from_clvm(allocator, solution)?)
-//     }
-// }
+    fn construct_solution(
+        &self,
+        ctx: &mut SpendContext,
+        solution: Self::Solution,
+    ) -> Result<NodePtr, DriverError> {
+        ctx.alloc(&solution)
+    }
 
-// impl SpendWithConditions for StandardLayer {
-//     fn spend_with_conditions(
-//         &self,
-//         ctx: &mut SpendContext,
-//         conditions: Conditions,
-//     ) -> Result<Spend, DriverError> {
-//         let delegated_puzzle = ctx.alloc(&clvm_quote!(conditions))?;
-//         self.construct_spend(
-//             ctx,
-//             StandardSolution {
-//                 original_public_key: None,
-//                 delegated_puzzle,
-//                 solution: NodePtr::NIL,
-//             },
-//         )
-//     }
-// }
+    fn parse_puzzle(_allocator: &Allocator, _puzzle: Puzzle) -> Result<Option<Self>, DriverError> {
+        Ok(None)
+    }
 
-// impl ToTreeHash for StandardLayer {
-//     fn tree_hash(&self) -> TreeHash {
-//         StandardArgs::curry_tree_hash(self.synthetic_key)
-//     }
-// }
-
+    fn parse_solution(
+        allocator: &Allocator,
+        solution: NodePtr,
+    ) -> Result<Self::Solution, DriverError> {
+        Ok(P2Eip712MessageSolution::from_clvm(allocator, solution)?)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
