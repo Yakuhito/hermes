@@ -39,7 +39,7 @@ pub struct P2Eip712MessageLayer {
 #[clvm(curry)]
 pub struct P2Eip712MessageArgs {
     pub prefix_and_domain_separator: [u8; 34],
-    pub domain_type_hash: Bytes32,
+    pub type_hash: Bytes32,
     pub address: AddressBytes,
 }
 
@@ -100,7 +100,7 @@ impl P2Eip712MessageLayer {
         pads
     }
 
-    pub fn domain_type_hash(&self) -> Bytes32 {
+    pub fn type_hash(&self) -> Bytes32 {
         keccak256(b"ChiaCoinSpend(bytes32 coin_id,bytes32 delegated_puzzle_hash)").into()
     }
 }
@@ -113,7 +113,7 @@ impl Layer for P2Eip712MessageLayer {
             program: ctx.p2_eip712_message_puzzle()?,
             args: P2Eip712MessageArgs {
                 prefix_and_domain_separator: self.prefix_and_domain_separator(),
-                domain_type_hash: self.domain_type_hash(),
+                type_hash: self.type_hash(),
                 address: self.address,
             },
         };
@@ -164,6 +164,32 @@ mod tests {
         assert_puzzle_hash!(P2_EIP712_MESSAGE_PUZZLE => P2_EIP712_MESSAGE_PUZZLE_HASH);
 
         Ok(())
+    }
+
+    fn get_hash_to_sign(
+        layer: &P2Eip712MessageLayer,
+        coin_id: Bytes32,
+        delegated_puzzle_hash: Bytes32,
+    ) -> Bytes32 {
+        /*
+        bytes32 messageHash = keccak256(abi.encode(
+            typeHash,
+            coin_id,
+            delegated_puzzle_hash
+        ));
+        */
+        let mut to_hash = Vec::new();
+        to_hash.extend_from_slice(&layer.type_hash());
+        to_hash.extend_from_slice(&coin_id);
+        to_hash.extend_from_slice(&delegated_puzzle_hash);
+
+        let message_hash = keccak256(&to_hash);
+
+        let mut to_hash = Vec::new();
+        to_hash.extend_from_slice(&layer.prefix_and_domain_separator());
+        to_hash.extend_from_slice(&message_hash);
+
+        keccak256(&to_hash).into()
     }
 
     #[test]
