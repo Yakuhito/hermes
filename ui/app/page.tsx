@@ -9,7 +9,7 @@ export default function Home() {
   const { isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData()
 
-  const [pk, setPk] = useState('0x042a72044602023cae55c624a4f3246e0106dabac4b87d5465362e76357daa964a39e391363fdc9b752f7ebd5ad3f6e31b5f148766877171cca673fff3097ede60');
+  const [pk, setPk] = useState('');
   const [sig, setSig] = useState('');
   const [coinId, setCoinId] = useState('');
   const [delegatedPuzzleHash, setDelegatedPuzzleHash] = useState('');
