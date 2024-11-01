@@ -44,7 +44,7 @@
 
     (if (all
             (= ADDRESS (substr (keccak256 pubkey) 12 32))
-            (secp256k1_verify  
+            (not (secp256k1_verify  
                 pubkey
                 (keccak256
                     PREFIX_AND_DOMAIN_SEPARATOR ; "\x19\x01" + domain_separator
@@ -55,7 +55,7 @@
                     ) ; messageHash
                 ) ; message digest
                 signature ; duh
-            )
+            ))
         )
         (c
             (list ASSERT_MY_COIN_ID my_id)

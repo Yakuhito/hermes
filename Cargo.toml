@@ -9,8 +9,10 @@ chia = "0.15.0"
 chia-traits = "0.15.0"
 clvm-traits = "0.15.0"
 ethers = { version = "2.0.14"}
-k256 = "0.13.4"
+k256 = { version = "0.13.4", features = ["ecdsa"] }
 hex = "0.4.3"
+sha2 = "0.10.8"
+ecdsa = "0.16.9"
 
 clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "2f413e72fcf1bcafa4a3117f2c2a0a3a0e7e1c6b" }
 chia-wallet-sdk = { git = "https://github.com/Rigidity/chia-wallet-sdk.git", rev = "1ee8fce668c3a81bda08a261f846671f5c8d4a33"}

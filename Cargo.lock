@@ -493,11 +493,13 @@ dependencies = [
  "chia-wallet-sdk",
  "clvm-traits",
  "clvmr",
+ "ecdsa",
  "ethers",
  "hex",
  "hex-literal",
  "k256",
  "rstest",
+ "sha2",
 ]
 
 [[package]]

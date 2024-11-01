@@ -8,10 +8,10 @@ use clvmr::{Allocator, NodePtr};
 use ethers::utils::keccak256;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 226] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff5f80ffff010cffff01208080ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff82017fff808080808080ff81bf8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff82017fff8202ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 230] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff5f80ffff010cffff01208080ffff20ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff82017fff808080808080ff81bf808080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff82017fff8202ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    d96d95b0e5184e43dd135297b385afdd39ecbbba6e16fc9240b9d3089a932360
+    0bf60205cb30b04ddadc4f9eeb2277c7f04cbb2c0a4ac2b57ba0b8559f046cfb
     "
 ));
 
@@ -27,7 +27,7 @@ impl SpendContextExt for SpendContext {
 
 type AddressBytes = [u8; 20];
 type EthPubkeyBytes = [u8; 65];
-type EthSignatureBytes = [u8; 65];
+type EthSignatureBytes = [u8; 64];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P2Eip712MessageLayer {
@@ -146,12 +146,15 @@ mod tests {
     use chia_traits::Streamable;
     use chia_wallet_sdk::{Conditions, Simulator};
     use clvm_traits::clvm_quote;
+    use ecdsa::signature::hazmat::PrehashSigner;
+    use ecdsa::signature::hazmat::PrehashVerifier;
+    use ecdsa::SigningKey;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
-    use ethers::signers::{LocalWallet, Signer};
+    use ethers::signers::LocalWallet;
     use ethers::utils::keccak256;
     use hex::encode;
-    use k256::ecdsa::SigningKey;
+    use k256::ecdsa::{Signature as K1Signature, VerifyingKey as K1VerifyingKey};
 
     // we really have to expose this in chia-sdk-test
     macro_rules! assert_puzzle_hash {
@@ -238,18 +241,15 @@ mod tests {
             coin.coin_id(),
             ctx.tree_hash(delegated_puzzle_ptr).into(),
         );
-        let signature = wallet.sign_hash(H256(hash_to_sign.to_vec().try_into().unwrap()))?;
-        let signature: EthSignatureBytes = signature.to_vec().try_into().unwrap();
+        // let signature_og = wallet.sign_hash(H256(hash_to_sign.to_vec().try_into().unwrap()))?;
+        // let signature: EthSignatureBytes = signature_og.to_vec().try_inign.to_vec().try_into().unwrap()))?;
+
+        let signature_og: K1Signature = wallet.signer().sign_prehash(&hash_to_sign.to_vec())?;
+        let signature: EthSignatureBytes = signature_og.to_vec().try_into().unwrap();
 
         println!(
             "Pub key: {:}",
-            encode(
-                wallet
-                    .signer()
-                    .verifying_key()
-                    .to_encoded_point(false)
-                    .as_bytes()
-            )
+            encode(wallet.signer().verifying_key().to_sec1_bytes())
         );
         let coin_spend = layer.construct_coin_spend(
             ctx,
@@ -259,8 +259,8 @@ mod tests {
                 pubkey: wallet
                     .signer()
                     .verifying_key()
-                    .to_encoded_point(false)
-                    .as_bytes()
+                    .to_sec1_bytes()
+                    .to_vec()
                     .into(),
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
@@ -270,7 +270,17 @@ mod tests {
 
         println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
         println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
+        println!("signed hash: {:}", encode(hash_to_sign));
         ctx.insert(coin_spend);
+
+        let verifier =
+            K1VerifyingKey::from_sec1_bytes(&wallet.signer().verifying_key().to_sec1_bytes())?;
+        assert_eq!(verifier, *wallet.signer().verifying_key());
+        let msg = hash_to_sign.to_vec();
+        let sig = K1Signature::from_slice(&signature)?;
+        assert_eq!(sig, K1Signature::from_slice(&signature_og.to_vec())?);
+        let result = verifier.verify_prehash(msg.as_ref(), &sig);
+        assert!(result.is_ok());
 
         sim.spend_coins(ctx.take(), &[])?;
 
