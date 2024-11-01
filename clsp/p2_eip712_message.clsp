@@ -2,12 +2,12 @@
 ;; A replacement for the standard puzzle allowing coins to be controlled by EIP-712 messages
 
 ;; The EIP-712 domain contains:
-;;   - name of the object being signed ("ChiaCoinSpend")
+;;   - name to be dislayed when signing ("Chia Coin Spend")
 ;;   - salt (32-byte genesis challenge of the Chia network - i.e., testnet11/mainnet)
 ;; The domain separator can then be computed off-chain as follows:
 ;; bytes32 domainSeparator = keccak256(abi.encode(
 ;;    keccak256("EIP712Domain(string name, bytes32 salt)"),
-;;    keccak256(bytes("ChiaCoinSpend")),
+;;    keccak256(bytes("Chia Coin Spend")),
 ;;    salt
 ;; ));
 

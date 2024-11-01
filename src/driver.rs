@@ -1,8 +1,6 @@
 use chia::clvm_utils::TreeHash;
 use chia_wallet_sdk::{DriverError, SpendContext};
 use clvmr::NodePtr;
-use ethers::contract::{Eip712, EthAbiType};
-use ethers::types::H256;
 use hex_literal::hex;
 
 pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 234] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff81bf80ffff010cffff01208080ffff8413d61f00ffff0eff17ff5f80ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff8202ffff808080808080ff82017f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff8202ffff8205ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
@@ -22,24 +20,12 @@ impl SpendContextExt for SpendContext {
     }
 }
 
-#[derive(Clone, Default, EthAbiType, Eip712)]
-#[eip712(
-    name = "ChiaCoinSpend",
-    // TEST_CONSTANTS.agg_sig_data
-    raw_salt = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-)]
-pub struct ChiaCoinSpend {
-    pub coin_id: H256,
-    pub delegated_puzzle_hash: H256,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
     use ethers::signers::{LocalWallet, Signer};
-    use ethers::types::transaction::eip712::Eip712;
     use ethers::utils::keccak256;
     use hex::encode;
     use k256::ecdsa::SigningKey;
@@ -77,7 +63,7 @@ mod tests {
         let output = keccak256(&uncompressed_pub_key[1..]);
 
         let pub_key_hash = &output[12..];
-        println!("keccak256(Public Key): 0x{:}", encode(output));
+        // println!("keccak256(Public Key): 0x{:}", encode(output));
         assert_eq!(
             format!("{:?}", address),
             format!("0x{:}", encode(pub_key_hash))
@@ -94,16 +80,33 @@ mod tests {
             encode(delegated_puzzle_hash)
         );
 
-        let msg = ChiaCoinSpend {
-            coin_id: H256::from(coin_id),
-            delegated_puzzle_hash: H256::from(delegated_puzzle_hash),
-        };
-        println!(
-            "Ethers struct hash: 0x{:}",
-            encode(msg.struct_hash().unwrap())
-        );
-        let msg_hash = msg.encode_eip712().unwrap();
-        println!("Hash To Sign (ethers): 0x{:}", encode(msg_hash));
+        /*
+        ;; bytes32 domainSeparator = keccak256(abi.encode(
+        ;;    keccak256("EIP712Domain(string name, bytes32 salt)"),
+        ;;    keccak256(bytes("Chia Coin Spend")),
+        ;;    salt
+        ;; ));
+         */
+        let type_hash = keccak256(b"EIP712Domain(string name,bytes32 salt)");
+        // let name_hash = keccak256("Chia Coin Spend".as_bytes());
+        // let salt = H256::from(hex!(
+        //     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        // ));
+
+        // let mut to_hash = Vec::new();
+        // to_hash.extend_from_slice(&type_hash);
+        // to_hash.extend_from_slice(&name_hash);
+        // to_hash.extend_from_slice(salt.as_bytes());
+        let domain_separator = keccak256(ethers::abi::encode(&[
+            ethers::abi::Token::FixedBytes(type_hash.to_vec()),
+            ethers::abi::Token::FixedBytes(keccak256("Chia Coin Spend").to_vec()),
+            ethers::abi::Token::FixedBytes(
+                hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").to_vec(),
+            ),
+        ]));
+
+        // let domain_separator = keccak256(&to_hash);
+        println!("Domain Separator: 0x{:}", encode(domain_separator));
 
         /*
         bytes32 messageHash = keccak256(abi.encode(
@@ -119,11 +122,11 @@ mod tests {
         to_hash.extend_from_slice(&delegated_puzzle_hash);
 
         let message_hash = keccak256(&to_hash);
-        println!("Message Hash: 0x{:}", encode(message_hash));
+        println!("hashStruct(message): 0x{:}", encode(message_hash));
 
         let mut to_hash = Vec::new();
         to_hash.extend_from_slice(&[0x19, 0x01]); // "\x19\x01",
-        to_hash.extend_from_slice(&msg.domain_separator().unwrap());
+        to_hash.extend_from_slice(&domain_separator);
         to_hash.extend_from_slice(&message_hash);
 
         let hash_to_sign = keccak256(&to_hash);
