@@ -8,10 +8,10 @@ use clvmr::{Allocator, NodePtr};
 use ethers::utils::keccak256;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 286] = hex!("ff02ffff01ff02ffff03ffff22ffff20ffff8413d61f00ff5fffff3eff05ffff3eff0bff2fffff02ff0effff04ff02ffff04ff82017fff808080808080ff81bf808080ffff01ff04ffff04ff04ffff04ff2fff808080ffff04ffff04ff0affff04ff17ff808080ffff04ffff04ff0affff04ff5fff808080ffff04ffff04ff0affff04ffff3eff5f80ff808080ffff04ffff04ff0affff04ffff3effff0cff5fffff01018080ff808080ff808080808080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff01ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff0effff04ff02ffff04ff09ff80808080ffff02ff0effff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 199] = hex!("ff02ffff01ff02ffff03ffff20ffff8413d61f00ffff01867075626b6579ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff81bfff808080808080ff5f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff81bfff82017f8080ffff01ff088080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    f5585732c039fcf1077e6ca40c455c32ffe8b3fb38f1ac9d95e8c347dfa3be97
+    603616a8eb541c625d29e712341d1be48762cfd53237f31d087280f5ee3d2ab5
     "
 ));
 
@@ -25,14 +25,13 @@ impl SpendContextExt for SpendContext {
     }
 }
 
-type AddressBytes = [u8; 20];
-type EthPubkeyBytes = [u8; 65];
+type EthPubkeyBytes = [u8; 33];
 type EthSignatureBytes = [u8; 64];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P2Eip712MessageLayer {
     pub genesis_challenge: Bytes32,
-    pub address: AddressBytes,
+    pub pubkey: EthPubkeyBytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ToClvm, FromClvm)]
@@ -40,24 +39,23 @@ pub struct P2Eip712MessageLayer {
 pub struct P2Eip712MessageArgs {
     pub prefix_and_domain_separator: Bytes,
     pub type_hash: Bytes32,
-    pub address: Bytes,
+    pub pubkey: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ToClvm, FromClvm)]
 #[clvm(solution)]
 pub struct P2Eip712MessageSolution<P, S> {
     pub my_id: Bytes32,
-    pub pubkey: Bytes,
     pub signature: Bytes,
     pub delegated_puzzle: P,
     pub delegated_solution: S,
 }
 
 impl P2Eip712MessageLayer {
-    pub fn new(genesis_challenge: Bytes32, address: [u8; 20]) -> Self {
+    pub fn new(genesis_challenge: Bytes32, pubkey: EthPubkeyBytes) -> Self {
         Self {
             genesis_challenge,
-            address,
+            pubkey,
         }
     }
 
@@ -65,7 +63,6 @@ impl P2Eip712MessageLayer {
         &self,
         ctx: &mut SpendContext,
         my_id: Bytes32,
-        pubkey: EthPubkeyBytes,
         signature: EthSignatureBytes,
         delegated_spend: Spend,
     ) -> Result<Spend, DriverError> {
@@ -73,7 +70,6 @@ impl P2Eip712MessageLayer {
             ctx,
             P2Eip712MessageSolution {
                 my_id,
-                pubkey: Bytes::new(pubkey.to_vec()),
                 signature: Bytes::new(signature.to_vec()),
                 delegated_puzzle: delegated_spend.puzzle,
                 delegated_solution: delegated_spend.solution,
@@ -114,7 +110,7 @@ impl Layer for P2Eip712MessageLayer {
             args: P2Eip712MessageArgs {
                 prefix_and_domain_separator: self.prefix_and_domain_separator().to_vec().into(),
                 type_hash: self.type_hash(),
-                address: self.address.to_vec().into(),
+                pubkey: self.pubkey.to_vec().into(),
             },
         };
         ctx.alloc(&curried)
@@ -205,34 +201,15 @@ mod tests {
         let wallet: LocalWallet = signing_key.into();
 
         let address = wallet.address();
-        let public_key = wallet.signer().verifying_key();
         println!("Address: {:?}", address);
-
-        // compute keccak256 of pub key (sanity check)
-        let uncompressed_pub_key = public_key.to_encoded_point(false);
-        let uncompressed_pub_key = uncompressed_pub_key.as_bytes();
-        println!("Public Key: 0x{:}", encode(public_key.to_sec1_bytes()));
-        let output = keccak256(&uncompressed_pub_key[1..]);
-
-        println!("uncompressed_pub_key: {:?}", encode(uncompressed_pub_key));
-        println!("given pub key: {:?}", encode(public_key.to_sec1_bytes()));
-
-        let pub_key_hash = &output[12..];
-        // println!("keccak256(Public Key): 0x{:}", encode(output));
-        assert_eq!(
-            format!("{:?}", address),
-            format!("0x{:}", encode(pub_key_hash))
-        );
-        println!("address: {:?}", address);
-        println!("pub_key_hash: {:?}", encode(output));
-        println!("address from key hash: {:?}", encode(pub_key_hash));
 
         // actual test
         let ctx = &mut SpendContext::new();
         let mut sim = Simulator::new();
 
-        let address: AddressBytes = address.into();
-        let layer = P2Eip712MessageLayer::new(TEST_CONSTANTS.genesis_challenge, address);
+        let pubkey = wallet.signer().verifying_key().to_sec1_bytes().to_vec();
+        let layer =
+            P2Eip712MessageLayer::new(TEST_CONSTANTS.genesis_challenge, pubkey.try_into().unwrap());
         let coin_puzzle_reveal = layer.construct_puzzle(ctx)?;
         let coin_puzzle_hash = ctx.tree_hash(coin_puzzle_reveal);
 
@@ -262,12 +239,6 @@ mod tests {
             coin,
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
-                pubkey: wallet
-                    .signer()
-                    .verifying_key()
-                    .to_sec1_bytes()
-                    .to_vec()
-                    .into(),
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,
