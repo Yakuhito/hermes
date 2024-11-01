@@ -36,7 +36,6 @@ pub struct ChiaCoinSpend {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use abi::Token;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
     use ethers::signers::{LocalWallet, Signer};
@@ -114,18 +113,12 @@ mod tests {
         ));
         */
         let type_hash = keccak256(b"ChiaCoinSpend(bytes32 coin_id,bytes32 delegated_puzzle_hash)");
-        // let mut to_hash = Vec::new();
-        // to_hash.extend_from_slice(&type_hash);
-        // to_hash.extend_from_slice(&coin_id);
-        // to_hash.extend_from_slice(&delegated_puzzle_hash);
-        let encoded = ethers::abi::encode(&[
-            Token::FixedBytes(type_hash.to_vec()),
-            Token::FixedBytes(coin_id.to_vec()),
-            Token::FixedBytes(delegated_puzzle_hash.to_vec()),
-        ]);
+        let mut to_hash = Vec::new();
+        to_hash.extend_from_slice(&type_hash);
+        to_hash.extend_from_slice(&coin_id);
+        to_hash.extend_from_slice(&delegated_puzzle_hash);
 
-        // let message_hash = keccak256(&to_hash);
-        let message_hash = keccak256(&encoded);
+        let message_hash = keccak256(&to_hash);
         println!("Message Hash: 0x{:}", encode(message_hash));
 
         let mut to_hash = Vec::new();

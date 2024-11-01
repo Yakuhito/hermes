@@ -1,13 +1,13 @@
 from eth_account.messages import encode_typed_data
 
 domain = {
-    'name': 'ChiaCoinSpend',
+    'name': 'Chia Coin Spend',
     'salt': '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 }
 types = {
     'ChiaCoinSpend': [
         {'name': 'coin_id', 'type': 'bytes32'},
-        {'name': 'delegated_puzzle_hash', 'type': 'bytes3'}
+        {'name': 'delegated_puzzle_hash', 'type': 'bytes32'}
     ]
 }
 
@@ -20,4 +20,5 @@ encoded_data = encode_typed_data(
     }
 )
 
-print(encoded_data)
+print("domainSeparator:", "0x" + encoded_data.header.hex())
+print("hashStruct(message):", "0x" + encoded_data.body.hex())
