@@ -11,6 +11,8 @@ export default function Home() {
 
   const [pk, setPk] = useState('0x042a72044602023cae55c624a4f3246e0106dabac4b87d5465362e76357daa964a39e391363fdc9b752f7ebd5ad3f6e31b5f148766877171cca673fff3097ede60');
   const [sig, setSig] = useState('');
+  const [coinId, setCoinId] = useState('');
+  const [delegatedPuzzleHash, setDelegatedPuzzleHash] = useState('');
 
   return (
     <main className="min-h-screen px-8 py-0 pb-12 flex-1 flex flex-col items-center bg-white">
@@ -46,13 +48,27 @@ export default function Home() {
                 message: "Hello, Chia!"
               });
             
-              console.log({ sig, msgHash})
+              console.log({ sig, msgHash })
               setPk(await recoverPublicKey({ hash: msgHash as `0xstring`, signature: sig }))
             }}
           >Reveal pk</button>
           <div className="mt-8">Pk: {pk}</div>
         </div>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col items-center">
+          <input
+            type="text"
+            value={coinId}
+            onChange={(e) => setCoinId(e.target.value)}
+            placeholder="Enter coin_id"
+            className="mt-2 px-4 py-2 border-2 border-gray-300 rounded-xl w-64"
+          />
+          <input
+            type="text"
+            value={delegatedPuzzleHash}
+            onChange={(e) => setDelegatedPuzzleHash(e.target.value)}
+            placeholder="Enter delegated_puzzle_hash"
+            className="mt-2 px-4 py-2 border-2 border-gray-300 rounded-xl w-64"
+          />
           <button
             className="mt-2 px-4 py-2 w-64 border-2 border-green-500 hover:bg-green-500 hover:text-black font-medium rounded-xl text-green-500"
             onClick={async () => {
@@ -67,13 +83,13 @@ export default function Home() {
                 ]
               };
               let message = {
-                coin_id: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`,
-                delegated_puzzle_hash: '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' as `0x${string}`
+                coin_id: coinId as `0x${string}`,
+                delegated_puzzle_hash: delegatedPuzzleHash as `0x${string}`
               };
 
               const msgHash = _TypedDataEncoder.hash(domain, types, message);
 
-              console.log({ msgHash})
+              console.log({ msgHash })
               let sig = await signTypedDataAsync({
                 domain: {
                   name: "Chia Coin Spend",

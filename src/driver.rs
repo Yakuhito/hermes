@@ -135,6 +135,33 @@ impl Layer for P2Eip712MessageLayer {
         Ok(P2Eip712MessageSolution::from_clvm(allocator, solution)?)
     }
 }
+
+pub fn get_hash_to_sign(
+    layer: &P2Eip712MessageLayer,
+    coin_id: Bytes32,
+    delegated_puzzle_hash: Bytes32,
+) -> Bytes32 {
+    /*
+    bytes32 messageHash = keccak256(abi.encode(
+        typeHash,
+        coin_id,
+        delegated_puzzle_hash
+    ));
+    */
+    let mut to_hash = Vec::new();
+    to_hash.extend_from_slice(&layer.type_hash());
+    to_hash.extend_from_slice(&coin_id);
+    to_hash.extend_from_slice(&delegated_puzzle_hash);
+
+    let message_hash = keccak256(&to_hash);
+
+    let mut to_hash = Vec::new();
+    to_hash.extend_from_slice(&layer.prefix_and_domain_separator());
+    to_hash.extend_from_slice(&message_hash);
+
+    keccak256(&to_hash).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,7 +175,6 @@ mod tests {
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
     use ethers::signers::LocalWallet;
-    use ethers::utils::keccak256;
     use hex::encode;
     use k256::ecdsa::{Signature as K1Signature, VerifyingKey as K1VerifyingKey};
 
@@ -167,32 +193,6 @@ mod tests {
         assert_puzzle_hash!(P2_EIP712_MESSAGE_PUZZLE => P2_EIP712_MESSAGE_PUZZLE_HASH);
 
         Ok(())
-    }
-
-    fn get_hash_to_sign(
-        layer: &P2Eip712MessageLayer,
-        coin_id: Bytes32,
-        delegated_puzzle_hash: Bytes32,
-    ) -> Bytes32 {
-        /*
-        bytes32 messageHash = keccak256(abi.encode(
-            typeHash,
-            coin_id,
-            delegated_puzzle_hash
-        ));
-        */
-        let mut to_hash = Vec::new();
-        to_hash.extend_from_slice(&layer.type_hash());
-        to_hash.extend_from_slice(&coin_id);
-        to_hash.extend_from_slice(&delegated_puzzle_hash);
-
-        let message_hash = keccak256(&to_hash);
-
-        let mut to_hash = Vec::new();
-        to_hash.extend_from_slice(&layer.prefix_and_domain_separator());
-        to_hash.extend_from_slice(&message_hash);
-
-        keccak256(&to_hash).into()
     }
 
     #[test]

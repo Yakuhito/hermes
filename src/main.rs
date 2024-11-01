@@ -59,6 +59,9 @@ fn main() {
         encode(delegated_puzzle_hash)
     );
 
+    let msg_hash = get_hash_to_sign(&layer, coin.coin_id(), delegated_puzzle_hash);
+    println!("Expected message to sign: 0x{:}", encode(msg_hash));
+
     let mut input = String::new();
     print!("Enter your signature: ");
     io::stdout().flush().unwrap(); // Flush to ensure prompt is displayed
