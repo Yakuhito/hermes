@@ -3,10 +3,10 @@ use chia_wallet_sdk::{DriverError, SpendContext};
 use clvmr::NodePtr;
 use hex_literal::hex;
 
-pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 196] = hex!("ff02ffff01ff02ffff03ffff8413d61f00ffff0eff17ff5f80ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff82017fff808080808080ff81bf80ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff82017fff8202ff8080ffff01ff088080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_EIP712_MESSAGE_PUZZLE: [u8; 234] = hex!("ff02ffff01ff02ffff03ffff22ffff09ff17ffff0cffff3eff81bf80ffff010cffff01208080ffff8413d61f00ffff0eff17ff5f80ffff3eff05ffff3eff0bff2fffff02ff06ffff04ff02ffff04ff8202ffff808080808080ff82017f8080ffff01ff04ffff04ff04ffff04ff2fff808080ffff02ff8202ffff8205ff8080ffff01ff08ffff01846e6f70658080ff0180ffff04ffff01ff46ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
 pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
-    e1470661c64fc02b4a580fedbaa75db534219fb6afb264fe575f5856a0252c17
+    76b33566c2f473e69e6eecbacc9138e1d10f46c1607545aeab8f9a30b6c394e2
     "
 ));
 
@@ -23,11 +23,13 @@ impl SpendContextExt for SpendContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chia::consensus::consensus_constants::TEST_CONSTANTS;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::*;
     use ethers::signers::{LocalWallet, Signer};
     use hex::encode;
     use k256::ecdsa::SigningKey;
+    use tiny_keccak::{Hasher, Keccak};
 
     // we really have to expose this in chia-sdk-test
     macro_rules! assert_puzzle_hash {
@@ -45,7 +47,6 @@ mod tests {
 
         Ok(())
     }
-    use tiny_keccak::{Hasher, Keccak};
 
     #[test]
     fn test_thing() -> anyhow::Result<()> {
