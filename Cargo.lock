@@ -498,7 +498,6 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
- "tiny-keccak",
 ]
 
 [[package]]
