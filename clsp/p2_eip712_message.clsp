@@ -43,7 +43,7 @@
     (include sha256tree.clib)
 
     (if (all
-            (= ADDRESS (substr (keccak256 pubkey) 12 32))
+            ; (= ADDRESS (substr (keccak256 (substr pubkey 1)) 12))
             (not (secp256k1_verify  
                 pubkey
                 (keccak256
@@ -57,9 +57,15 @@
                 signature ; duh
             ))
         )
-        (c
+        ; (c
+        ;    (list ASSERT_MY_COIN_ID my_id)
+        ;    (a delegated_puzzle delegated_solution)
+        ; )
+        (list
             (list ASSERT_MY_COIN_ID my_id)
-            (a delegated_puzzle delegated_solution)
+            (list REMARK ADDRESS)
+            (list REMARK (keccak256 pubkey))
+            (list REMARK (keccak256 (substr pubkey 1)))
         )
         ; else
         (x "nope")
