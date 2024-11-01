@@ -1,10 +1,9 @@
 use chia::{
     clvm_traits::{FromClvm, ToClvm},
     clvm_utils::{CurriedProgram, TreeHash},
-    protocol::{Bytes32, Coin},
-    puzzles::standard::StandardSolution,
+    protocol::Bytes32,
 };
-use chia_wallet_sdk::{Conditions, DriverError, Layer, Puzzle, Spend, SpendContext};
+use chia_wallet_sdk::{DriverError, Layer, Puzzle, Spend, SpendContext};
 use clvmr::{Allocator, NodePtr};
 use ethers::utils::keccak256;
 use hex_literal::hex;
@@ -65,24 +64,19 @@ impl P2Eip712MessageLayer {
     pub fn spend(
         &self,
         ctx: &mut SpendContext,
-        coin: Coin,
-        conditions: Conditions,
-    ) -> Result<(), DriverError> {
-        let spend = self.spend_with_conditions(ctx, conditions)?;
-        ctx.spend(coin, spend)
-    }
-
-    pub fn delegated_inner_spend(
-        &self,
-        ctx: &mut SpendContext,
-        spend: Spend,
+        my_id: Bytes32,
+        pubkey: EthPubkeyBytes,
+        signature: EthSignatureBytes,
+        delegated_spend: Spend,
     ) -> Result<Spend, DriverError> {
         self.construct_spend(
             ctx,
-            StandardSolution {
-                original_public_key: None,
-                delegated_puzzle: spend.puzzle,
-                solution: spend.solution,
+            P2Eip712MessageSolution {
+                my_id,
+                pubkey,
+                signature,
+                delegated_puzzle: delegated_spend.puzzle,
+                delegated_solution: delegated_spend.solution,
             },
         )
     }
@@ -99,9 +93,10 @@ impl P2Eip712MessageLayer {
     }
 
     pub fn prefix_and_domain_separator(&self) -> [u8; 34] {
-        let mut pads = Vec::new();
-        pads.extend_from_slice(&[0x19, 0x01]); // "\x19\x01",
-        pads.extend_from_slice(&self.domain_separator());
+        let mut pads = [0u8; 34];
+        pads[0] = 0x19;
+        pads[1] = 0x01;
+        pads[2..].copy_from_slice(&self.domain_separator());
         pads
     }
 
