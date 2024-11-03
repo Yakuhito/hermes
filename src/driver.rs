@@ -46,6 +46,7 @@ pub struct P2Eip712MessageArgs {
 #[clvm(solution)]
 pub struct P2Eip712MessageSolution<P, S> {
     pub my_id: Bytes32,
+    pub signed_hash: Bytes32,
     pub signature: Bytes,
     pub delegated_puzzle: P,
     pub delegated_solution: S,
@@ -70,6 +71,7 @@ impl P2Eip712MessageLayer {
             ctx,
             P2Eip712MessageSolution {
                 my_id,
+                signed_hash: self.hash_to_sign(my_id, ctx.tree_hash(delegated_spend.puzzle).into()),
                 signature: Bytes::new(signature.to_vec()),
                 delegated_puzzle: delegated_spend.puzzle,
                 delegated_solution: delegated_spend.solution,
@@ -280,6 +282,8 @@ mod tests {
             coin,
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
+                signed_hash: layer
+                    .hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into()),
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,

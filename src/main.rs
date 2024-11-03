@@ -82,6 +82,7 @@ fn main() {
             coin,
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
+                signed_hash: msg_hash,
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,
