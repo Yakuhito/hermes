@@ -59,7 +59,7 @@ fn main() {
         encode(delegated_puzzle_hash)
     );
 
-    let msg_hash = get_hash_to_sign(&layer, coin.coin_id(), delegated_puzzle_hash);
+    let msg_hash = layer.hash_to_sign(coin.coin_id(), delegated_puzzle_hash);
     println!("Expected message to sign: 0x{:}", encode(msg_hash));
 
     let mut input = String::new();

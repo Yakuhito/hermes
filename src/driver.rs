@@ -97,8 +97,30 @@ impl P2Eip712MessageLayer {
         pads
     }
 
-    pub fn type_hash(&self) -> Bytes32 {
+    pub fn type_hash() -> Bytes32 {
         keccak256(b"ChiaCoinSpend(bytes32 coin_id,bytes32 delegated_puzzle_hash)").into()
+    }
+
+    pub fn hash_to_sign(&self, coin_id: Bytes32, delegated_puzzle_hash: Bytes32) -> Bytes32 {
+        /*
+        bytes32 messageHash = keccak256(abi.encode(
+            typeHash,
+            coin_id,
+            delegated_puzzle_hash
+        ));
+        */
+        let mut to_hash = Vec::new();
+        to_hash.extend_from_slice(&P2Eip712MessageLayer::type_hash());
+        to_hash.extend_from_slice(&coin_id);
+        to_hash.extend_from_slice(&delegated_puzzle_hash);
+
+        let message_hash = keccak256(&to_hash);
+
+        let mut to_hash = Vec::new();
+        to_hash.extend_from_slice(&self.prefix_and_domain_separator());
+        to_hash.extend_from_slice(&message_hash);
+
+        keccak256(&to_hash).into()
     }
 }
 
@@ -110,7 +132,7 @@ impl Layer for P2Eip712MessageLayer {
             program: ctx.p2_eip712_message_puzzle()?,
             args: P2Eip712MessageArgs {
                 prefix_and_domain_separator: self.prefix_and_domain_separator().to_vec().into(),
-                type_hash: self.type_hash(),
+                type_hash: P2Eip712MessageLayer::type_hash(),
                 pubkey: self.pubkey.to_vec().into(),
             },
         };
@@ -135,32 +157,6 @@ impl Layer for P2Eip712MessageLayer {
     ) -> Result<Self::Solution, DriverError> {
         Ok(P2Eip712MessageSolution::from_clvm(allocator, solution)?)
     }
-}
-
-pub fn get_hash_to_sign(
-    layer: &P2Eip712MessageLayer,
-    coin_id: Bytes32,
-    delegated_puzzle_hash: Bytes32,
-) -> Bytes32 {
-    /*
-    bytes32 messageHash = keccak256(abi.encode(
-        typeHash,
-        coin_id,
-        delegated_puzzle_hash
-    ));
-    */
-    let mut to_hash = Vec::new();
-    to_hash.extend_from_slice(&layer.type_hash());
-    to_hash.extend_from_slice(&coin_id);
-    to_hash.extend_from_slice(&delegated_puzzle_hash);
-
-    let message_hash = keccak256(&to_hash);
-
-    let mut to_hash = Vec::new();
-    to_hash.extend_from_slice(&layer.prefix_and_domain_separator());
-    to_hash.extend_from_slice(&message_hash);
-
-    keccak256(&to_hash).into()
 }
 
 #[cfg(test)]
@@ -272,11 +268,8 @@ mod tests {
             clvm_quote!(Conditions::new().reserve_fee(1337)).to_clvm(&mut ctx.allocator)?;
         let delegated_solution_ptr = ctx.allocator.nil();
 
-        let hash_to_sign = get_hash_to_sign(
-            &layer,
-            coin.coin_id(),
-            ctx.tree_hash(delegated_puzzle_ptr).into(),
-        );
+        let hash_to_sign =
+            layer.hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into());
 
         let signature_og: K1Signature = wallet.signer().sign_prehash(&hash_to_sign.to_vec())?;
         let signature: EthSignatureBytes = signature_og.to_vec().try_into().unwrap();
