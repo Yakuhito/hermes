@@ -206,6 +206,7 @@ mod tests {
 
         let puzzle_ptr = node_from_bytes(&mut ctx.allocator, puzzle_bytes.as_slice())?;
         let solution_ptr = vec![
+            // warning: old domain separator w/o version; do NOT use!
             Bytes::new(
                 hex!("1901098ccd7d09a29365582c3f7590712bc2c2eb8503586f8a4c628c61c73ffbe4aa")
                     .to_vec(),
