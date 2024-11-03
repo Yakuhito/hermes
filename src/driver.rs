@@ -295,31 +295,6 @@ mod tests {
         println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
         println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
         println!("coin id: {:}", coin_spend.coin.coin_id());
-
-        /*Bytes::new([1; 34].to_vec()), // PREFIX_AND_DOMAIN_SEPARATOR
-        Bytes::new([2; 32].to_vec()), // TYPE_HASH
-        Bytes::new([3; 32].to_vec()), // my_id
-        Bytes::new([4; 32].to_vec()), // delegated_puzzle_hash
-        Bytes::new([5; 43].to_vec()), // signed_hash */
-        println!(
-            "PREFIX_AND_DOMAIN_SEPARATOR: {:}",
-            encode(layer.prefix_and_domain_separator())
-        );
-        println!("TYPE_HASH: {:}", encode(layer.type_hash()));
-        println!("my_id: {:}", encode(coin.coin_id()));
-        let delegated_puzzle_hash: Bytes32 = ctx.tree_hash(delegated_puzzle_ptr).into();
-        println!(
-            "delegated_puzzle_hash: {:}",
-            encode(delegated_puzzle_hash.to_vec())
-        );
-        println!(
-            "signed_hash: {:}",
-            encode(get_hash_to_sign(
-                &layer,
-                coin.coin_id(),
-                delegated_puzzle_hash
-            ))
-        );
         ctx.insert(coin_spend);
 
         let verifier =
