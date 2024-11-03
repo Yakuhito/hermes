@@ -78,11 +78,12 @@ impl P2Eip712MessageLayer {
     }
 
     pub fn domain_separator(&self) -> Bytes32 {
-        let type_hash = keccak256(b"EIP712Domain(string name,bytes32 salt)");
+        let type_hash = keccak256(b"EIP712Domain(string name,string version,bytes32 salt)");
 
         keccak256(ethers::abi::encode(&[
             ethers::abi::Token::FixedBytes(type_hash.to_vec()),
             ethers::abi::Token::FixedBytes(keccak256("Chia Coin Spend").to_vec()),
+            ethers::abi::Token::FixedBytes(keccak256("1").to_vec()),
             ethers::abi::Token::FixedBytes(self.genesis_challenge.to_vec()),
         ]))
         .into()
