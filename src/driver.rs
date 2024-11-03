@@ -166,9 +166,13 @@ pub fn get_hash_to_sign(
 mod tests {
     use super::*;
     use chia::consensus::consensus_constants::TEST_CONSTANTS;
+    use chia::protocol::Bytes;
     use chia::traits::Streamable;
     use chia_wallet_sdk::{Conditions, Simulator};
     use clvm_traits::clvm_quote;
+    use clvmr::chia_dialect::ENABLE_KECCAK_OPS_OUTSIDE_GUARD;
+    use clvmr::reduction::Reduction;
+    use clvmr::serde::node_from_bytes;
     use ecdsa::signature::hazmat::PrehashSigner;
     use ecdsa::signature::hazmat::PrehashVerifier;
     use ecdsa::SigningKey;
@@ -192,6 +196,54 @@ mod tests {
     fn test_puzzle_hashes() -> anyhow::Result<()> {
         assert_puzzle_hash!(P2_EIP712_MESSAGE_PUZZLE => P2_EIP712_MESSAGE_PUZZLE_HASH);
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_softfork_cost() -> anyhow::Result<()> {
+        let ctx = &mut SpendContext::new();
+        let puzzle_bytes =
+            hex!("ff02ffff03ffff09ffff3eff02ffff3eff05ff0bff178080ff2f80ff80ffff01ff088080ff0180");
+
+        let puzzle_ptr = node_from_bytes(&mut ctx.allocator, puzzle_bytes.as_slice())?;
+        let solution_ptr = vec![
+            Bytes::new(
+                hex!("1901098ccd7d09a29365582c3f7590712bc2c2eb8503586f8a4c628c61c73ffbe4aa")
+                    .to_vec(),
+            ), // PREFIX_AND_DOMAIN_SEPARATOR
+            Bytes::new(
+                hex!("72930978f119c79f9de7a13bd50c9b3261132d7b4819bdf0d3ca4d4c37ade070").to_vec(),
+            ), // TYPE_HASH
+            Bytes::new(
+                hex!("5c777c45fd52a17a54e420742cadc56172847d9a106ff0ff8af38ef757d84829").to_vec(),
+            ), // my_id
+            Bytes::new(
+                hex!("d842dfa1453a130a8be66bc32708a2d1884662d7daaa4aae530be3259fa6712f").to_vec(),
+            ), // delegated_puzzle_hash
+            Bytes::new(
+                hex!("9f61fdf6077c3eeb96eaa4dd450b11ba3ae17746a2c304388218137972c7ba4c").to_vec(),
+            ), // signed_hash
+        ]
+        .to_clvm(&mut ctx.allocator)?;
+
+        println!(
+            "puzzle: {}",
+            encode(ctx.serialize(&puzzle_ptr)?.to_bytes()?)
+        );
+        println!(
+            "solution: {}",
+            encode(ctx.serialize(&solution_ptr)?.to_bytes()?)
+        );
+
+        let Reduction(cost, _) = clvmr::run_program(
+            &mut ctx.allocator,
+            &clvmr::ChiaDialect::new(ENABLE_KECCAK_OPS_OUTSIDE_GUARD),
+            puzzle_ptr,
+            solution_ptr,
+            11_000_000_000,
+        )?;
+
+        assert_eq!(cost, 1337);
         Ok(())
     }
 
@@ -243,6 +295,31 @@ mod tests {
         println!("puzzle: {}", encode(coin_spend.puzzle_reveal.to_bytes()?));
         println!("solution: {}", encode(coin_spend.solution.to_bytes()?));
         println!("coin id: {:}", coin_spend.coin.coin_id());
+
+        /*Bytes::new([1; 34].to_vec()), // PREFIX_AND_DOMAIN_SEPARATOR
+        Bytes::new([2; 32].to_vec()), // TYPE_HASH
+        Bytes::new([3; 32].to_vec()), // my_id
+        Bytes::new([4; 32].to_vec()), // delegated_puzzle_hash
+        Bytes::new([5; 43].to_vec()), // signed_hash */
+        println!(
+            "PREFIX_AND_DOMAIN_SEPARATOR: {:}",
+            encode(layer.prefix_and_domain_separator())
+        );
+        println!("TYPE_HASH: {:}", encode(layer.type_hash()));
+        println!("my_id: {:}", encode(coin.coin_id()));
+        let delegated_puzzle_hash: Bytes32 = ctx.tree_hash(delegated_puzzle_ptr).into();
+        println!(
+            "delegated_puzzle_hash: {:}",
+            encode(delegated_puzzle_hash.to_vec())
+        );
+        println!(
+            "signed_hash: {:}",
+            encode(get_hash_to_sign(
+                &layer,
+                coin.coin_id(),
+                delegated_puzzle_hash
+            ))
+        );
         ctx.insert(coin_spend);
 
         let verifier =
