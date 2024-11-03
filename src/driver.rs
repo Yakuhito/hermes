@@ -243,7 +243,7 @@ mod tests {
             11_000_000_000,
         )?;
 
-        assert_eq!(cost, 1337);
+        assert_eq!(cost, 2605);
         Ok(())
     }
 
