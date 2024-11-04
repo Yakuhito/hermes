@@ -15,6 +15,13 @@ pub const P2_EIP712_MESSAGE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
     "
 ));
 
+pub const P2_CONTROLLER_PUZZLE_PUZZLE: [u8; 151] = hex!("ff02ffff01ff04ffff04ff04ffff04ffff0117ffff04ffff02ff06ffff04ff02ffff04ff0bff80808080ffff04ff05ff8080808080ffff02ff0bff178080ffff04ffff01ff43ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080");
+pub const P2_CONTROLLER_PUZZLE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
+    "
+    0770e1551037c7f37138d3eb0166079f1efb096d58de846dc8844ca9f52f9ada
+    "
+));
+
 pub trait SpendContextExt {
     fn p2_eip712_message_puzzle(&mut self) -> Result<NodePtr, DriverError>;
 }
@@ -185,7 +192,7 @@ mod tests {
     macro_rules! assert_puzzle_hash {
         ($puzzle:ident => $puzzle_hash:ident) => {
             let ctx = &mut SpendContext::new();
-            let ptr = ctx.p2_eip712_message_puzzle().unwrap();
+            let ptr = ctx.alloc(&$puzzle).unwrap();
             let hash = ctx.tree_hash(ptr);
             assert_eq!($puzzle_hash, hash);
         };
@@ -194,6 +201,7 @@ mod tests {
     #[test]
     fn test_puzzle_hashes() -> anyhow::Result<()> {
         assert_puzzle_hash!(P2_EIP712_MESSAGE_PUZZLE => P2_EIP712_MESSAGE_PUZZLE_HASH);
+        assert_puzzle_hash!(P2_CONTROLLER_PUZZLE_PUZZLE => P2_CONTROLLER_PUZZLE_PUZZLE_HASH);
 
         Ok(())
     }
