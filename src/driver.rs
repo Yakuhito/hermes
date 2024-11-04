@@ -266,6 +266,7 @@ mod tests {
     use super::*;
     use chia::consensus::consensus_constants::TEST_CONSTANTS;
     use chia::protocol::Bytes;
+    use chia::protocol::CoinSpend;
     use chia::traits::Streamable;
     use chia_wallet_sdk::{Conditions, Simulator};
     use clvm_traits::clvm_quote;
@@ -345,6 +346,59 @@ mod tests {
         )?;
 
         assert_eq!(cost, 2605);
+        Ok(())
+    }
+
+    #[test]
+    fn test_p2_controller_puzzle() -> anyhow::Result<()> {
+        let mut sim = Simulator::new();
+        let ctx = &mut SpendContext::new();
+
+        let controller_puzzle = node_from_bytes(&mut ctx.allocator, &hex!("01"))?;
+        let controller_puzzle_hash = ctx.tree_hash(controller_puzzle);
+
+        let layer = P2ControllerPuzzleLayer::new(controller_puzzle_hash.into());
+        let coin_puzzle = layer.construct_puzzle(ctx)?;
+        let coin_puzzle_hash = ctx.tree_hash(coin_puzzle);
+
+        let controller_coin = sim.new_coin(controller_puzzle_hash.into(), 42);
+        let coin = sim.new_coin(coin_puzzle_hash.into(), 69);
+
+        let delegated_puzzle = Conditions::new()
+            .reserve_fee(42 + 69)
+            .to_clvm(&mut ctx.allocator)?;
+        let delegated_solution = ctx.allocator.nil();
+
+        let delegated_puzzle_hash = ctx.tree_hash(delegated_puzzle);
+
+        let coin_spend = layer.construct_coin_spend(
+            ctx,
+            coin,
+            P2ControllerPuzzleSolution {
+                delegated_puzzle,
+                delegated_solution,
+            },
+        )?;
+        ctx.insert(coin_spend);
+
+        let controller_solution = Conditions::new()
+            .assert_concurrent_spend(coin.coin_id())
+            .send_message(
+                23,
+                Bytes::from(delegated_puzzle_hash.to_vec()),
+                vec![coin.coin_id().to_clvm(&mut ctx.allocator)?],
+            );
+        let controller_solution = clvm_quote!(controller_solution).to_clvm(&mut ctx.allocator)?;
+
+        let controller_coin_spend = CoinSpend::new(
+            controller_coin,
+            ctx.serialize(&controller_puzzle)?,
+            ctx.serialize(&controller_solution)?,
+        );
+        ctx.insert(controller_coin_spend);
+
+        sim.spend_coins(ctx.take(), &[])?;
+
         Ok(())
     }
 
