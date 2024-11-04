@@ -24,11 +24,19 @@ pub const P2_CONTROLLER_PUZZLE_PUZZLE_HASH: TreeHash = TreeHash::new(hex!(
 
 pub trait SpendContextExt {
     fn p2_eip712_message_puzzle(&mut self) -> Result<NodePtr, DriverError>;
+    fn p2_controller_puzzle_puzzle(&mut self) -> Result<NodePtr, DriverError>;
 }
 
 impl SpendContextExt for SpendContext {
     fn p2_eip712_message_puzzle(&mut self) -> Result<NodePtr, DriverError> {
         self.puzzle(P2_EIP712_MESSAGE_PUZZLE_HASH, &P2_EIP712_MESSAGE_PUZZLE)
+    }
+
+    fn p2_controller_puzzle_puzzle(&mut self) -> Result<NodePtr, DriverError> {
+        self.puzzle(
+            P2_CONTROLLER_PUZZLE_PUZZLE_HASH,
+            &P2_CONTROLLER_PUZZLE_PUZZLE,
+        )
     }
 }
 
@@ -165,6 +173,91 @@ impl Layer for P2Eip712MessageLayer {
         solution: NodePtr,
     ) -> Result<Self::Solution, DriverError> {
         Ok(P2Eip712MessageSolution::from_clvm(allocator, solution)?)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct P2ControllerPuzzleLayer {
+    pub controller_puzzle_hash: Bytes32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToClvm, FromClvm)]
+#[clvm(curry)]
+pub struct P2ControllerPuzzleArgs {
+    pub controller_puzzle_hash: Bytes32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ToClvm, FromClvm)]
+#[clvm(solution)]
+pub struct P2ControllerPuzzleSolution<P, S> {
+    pub delegated_puzzle: P,
+    pub delegated_solution: S,
+}
+
+impl P2ControllerPuzzleLayer {
+    pub fn new(controller_puzzle_hash: Bytes32) -> Self {
+        Self {
+            controller_puzzle_hash,
+        }
+    }
+
+    pub fn spend(
+        &self,
+        ctx: &mut SpendContext,
+        delegated_spend: Spend,
+    ) -> Result<Spend, DriverError> {
+        self.construct_spend(
+            ctx,
+            P2ControllerPuzzleSolution {
+                delegated_puzzle: delegated_spend.puzzle,
+                delegated_solution: delegated_spend.solution,
+            },
+        )
+    }
+}
+
+impl Layer for P2ControllerPuzzleLayer {
+    type Solution = P2ControllerPuzzleSolution<NodePtr, NodePtr>;
+
+    fn construct_puzzle(&self, ctx: &mut SpendContext) -> Result<NodePtr, DriverError> {
+        let curried = CurriedProgram {
+            program: ctx.p2_controller_puzzle_puzzle()?,
+            args: P2ControllerPuzzleArgs {
+                controller_puzzle_hash: self.controller_puzzle_hash,
+            },
+        };
+        ctx.alloc(&curried)
+    }
+
+    fn construct_solution(
+        &self,
+        ctx: &mut SpendContext,
+        solution: Self::Solution,
+    ) -> Result<NodePtr, DriverError> {
+        ctx.alloc(&solution)
+    }
+
+    fn parse_puzzle(allocator: &Allocator, puzzle: Puzzle) -> Result<Option<Self>, DriverError> {
+        let Some(puzzle) = puzzle.as_curried() else {
+            return Ok(None);
+        };
+
+        if puzzle.mod_hash != P2_CONTROLLER_PUZZLE_PUZZLE_HASH {
+            return Ok(None);
+        }
+
+        let args = P2ControllerPuzzleArgs::from_clvm(allocator, puzzle.args)?;
+
+        Ok(Some(Self {
+            controller_puzzle_hash: args.controller_puzzle_hash,
+        }))
+    }
+
+    fn parse_solution(
+        allocator: &Allocator,
+        solution: NodePtr,
+    ) -> Result<Self::Solution, DriverError> {
+        Ok(Self::Solution::from_clvm(allocator, solution)?)
     }
 }
 
