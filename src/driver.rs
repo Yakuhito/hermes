@@ -364,9 +364,8 @@ mod tests {
         let controller_coin = sim.new_coin(controller_puzzle_hash.into(), 42);
         let coin = sim.new_coin(coin_puzzle_hash.into(), 69);
 
-        let delegated_puzzle = Conditions::new()
-            .reserve_fee(42 + 69)
-            .to_clvm(&mut ctx.allocator)?;
+        let delegated_puzzle =
+            clvm_quote!(Conditions::new().reserve_fee(42 + 69)).to_clvm(&mut ctx.allocator)?;
         let delegated_solution = ctx.allocator.nil();
 
         let delegated_puzzle_hash = ctx.tree_hash(delegated_puzzle);
