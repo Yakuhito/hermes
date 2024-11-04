@@ -380,14 +380,12 @@ mod tests {
         )?;
         ctx.insert(coin_spend);
 
-        let controller_solution = Conditions::new()
-            .assert_concurrent_spend(coin.coin_id())
-            .send_message(
-                23,
-                Bytes::from(delegated_puzzle_hash.to_vec()),
-                vec![coin.coin_id().to_clvm(&mut ctx.allocator)?],
-            );
-        let controller_solution = clvm_quote!(controller_solution).to_clvm(&mut ctx.allocator)?;
+        let controller_solution = Conditions::new().send_message(
+            23,
+            Bytes::from(delegated_puzzle_hash.to_vec()),
+            vec![coin.coin_id().to_clvm(&mut ctx.allocator)?],
+        );
+        let controller_solution = controller_solution.to_clvm(&mut ctx.allocator)?;
 
         let controller_coin_spend = CoinSpend::new(
             controller_coin,
