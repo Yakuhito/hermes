@@ -2,6 +2,7 @@ from eth_account.messages import encode_typed_data
 
 domain = {
     'name': 'Chia Coin Spend',
+    'version': '1',
     'salt': '0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 }
 types = {

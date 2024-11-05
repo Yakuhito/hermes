@@ -4,6 +4,7 @@ import { useState } from "react";
 import { recoverPublicKey } from "viem";
 import { useAccount, useSignTypedData } from "wagmi";
 import { _TypedDataEncoder } from "@ethersproject/hash";
+import { version } from "os";
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -74,6 +75,7 @@ export default function Home() {
             onClick={async () => {
               let domain =  {
                 name: "Chia Coin Spend",
+                version: "1",
                 salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
               };
               let types = {
@@ -93,6 +95,7 @@ export default function Home() {
               let sig = await signTypedDataAsync({
                 domain: {
                   name: "Chia Coin Spend",
+                  version: "1",
                   salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 },
                 types,

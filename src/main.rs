@@ -59,7 +59,7 @@ fn main() {
         encode(delegated_puzzle_hash)
     );
 
-    let msg_hash = get_hash_to_sign(&layer, coin.coin_id(), delegated_puzzle_hash);
+    let msg_hash = layer.hash_to_sign(coin.coin_id(), delegated_puzzle_hash);
     println!("Expected message to sign: 0x{:}", encode(msg_hash));
 
     let mut input = String::new();
@@ -82,6 +82,7 @@ fn main() {
             coin,
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
+                signed_hash: msg_hash,
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,
