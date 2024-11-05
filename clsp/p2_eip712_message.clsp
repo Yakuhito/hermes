@@ -49,7 +49,7 @@
         ; https://github.com/Chia-Network/chips/blob/main/CHIPs/chip-0011.md#softfork-usage
         (not (softfork
             (q . 2745) ; total cost needed to run the code + 140 = 2605 + 140 = 2745 
-            (q . 1) ; keccak256 soft fork
+            (q . 2) ; keccak256 soft fork
             ;; ./run '(mod (PREFIX_AND_DOMAIN_SEPARATOR TYPE_HASH my_id delegated_puzzle_hash signed_hash) (if (= (keccak256 PREFIX_AND_DOMAIN_SEPARATOR (keccak256 TYPE_HASH my_id delegated_puzzle_hash)) signed_hash) () (x)))'
             ;; ff02ffff03ffff09ffff3eff02ffff3eff05ff0bff178080ff2f80ff80ffff01ff088080ff0180
             (q . (a (i (= (keccak256 2 (keccak256 5 11 23)) 47) () (q 8)) 1)) ; code to evaluate

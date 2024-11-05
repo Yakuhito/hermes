@@ -15,8 +15,8 @@ chia-wallet-sdk = "0.17.0"
 clvmr = "0.9.1"
 
 [patch.crates-io]
-clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "2f413e72fcf1bcafa4a3117f2c2a0a3a0e7e1c6b" }
-chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "bf4b49fa57cb559afc4857ee1174a63233f30660" }
+clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "ad539f504ade075262ac1754a9e0010c2789255f" }
+chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "727ccd499c7f02e93f4e2e8591ff93575d589082" }
 
 [dev-dependencies]
 anyhow = "1.0.86"

@@ -534,8 +534,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-client"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "chia-protocol",
  "chia-sdk-types",
@@ -551,8 +551,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-derive"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "convert_case",
  "quote",
@@ -561,8 +561,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-driver"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-protocol",
@@ -579,8 +579,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-offers"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "bech32",
  "chia-bls 0.15.0",
@@ -600,8 +600,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-signer"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-consensus",
@@ -614,8 +614,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-test"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "anyhow",
  "bip39",
@@ -645,8 +645,8 @@ dependencies = [
 
 [[package]]
 name = "chia-sdk-types"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
  "chia-bls 0.15.0",
  "chia-consensus",
@@ -656,6 +656,20 @@ dependencies = [
  "clvmr",
  "hex-literal",
  "once_cell",
+]
+
+[[package]]
+name = "chia-sdk-utils"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
+dependencies = [
+ "bech32",
+ "chia-protocol",
+ "hex",
+ "indexmap",
+ "rand",
+ "rand_chacha",
+ "thiserror",
 ]
 
 [[package]]
@@ -705,22 +719,16 @@ dependencies = [
 
 [[package]]
 name = "chia-wallet-sdk"
-version = "0.17.0"
-source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=bf4b49fa57cb559afc4857ee1174a63233f30660#bf4b49fa57cb559afc4857ee1174a63233f30660"
+version = "0.17.2"
+source = "git+https://github.com/xch-dev/chia-wallet-sdk?rev=727ccd499c7f02e93f4e2e8591ff93575d589082#727ccd499c7f02e93f4e2e8591ff93575d589082"
 dependencies = [
- "bech32",
- "chia-protocol",
  "chia-sdk-client",
  "chia-sdk-driver",
  "chia-sdk-offers",
  "chia-sdk-signer",
  "chia-sdk-test",
  "chia-sdk-types",
- "hex",
- "indexmap",
- "rand",
- "rand_chacha",
- "thiserror",
+ "chia-sdk-utils",
 ]
 
 [[package]]
@@ -805,7 +813,7 @@ dependencies = [
 [[package]]
 name = "clvmr"
 version = "0.9.1"
-source = "git+https://github.com/Chia-Network/clvm_rs?rev=2f413e72fcf1bcafa4a3117f2c2a0a3a0e7e1c6b#2f413e72fcf1bcafa4a3117f2c2a0a3a0e7e1c6b"
+source = "git+https://github.com/Chia-Network/clvm_rs?rev=ad539f504ade075262ac1754a9e0010c2789255f#ad539f504ade075262ac1754a9e0010c2789255f"
 dependencies = [
  "chia-bls 0.10.0",
  "hex-literal",
