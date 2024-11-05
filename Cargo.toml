@@ -11,12 +11,12 @@ k256 = { version = "0.13.4", features = ["ecdsa"] }
 hex = "0.4.3"
 sha2 = "0.10.8"
 ecdsa = "0.16.9"
-chia-wallet-sdk = "0.17.0"
+chia-wallet-sdk = "0.17.2"
 clvmr = "0.9.1"
 
 [patch.crates-io]
 clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "ad539f504ade075262ac1754a9e0010c2789255f" }
-chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "727ccd499c7f02e93f4e2e8591ff93575d589082" }
+chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "52eea05468f84cd9122cf074e8b5c04d0d91ccda" }
 
 [dev-dependencies]
 anyhow = "1.0.86"
