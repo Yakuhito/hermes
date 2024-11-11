@@ -264,6 +264,7 @@ impl Layer for P2ControllerPuzzleLayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chia::clvm_utils::ToTreeHash;
     use chia::consensus::consensus_constants::TEST_CONSTANTS;
     use chia::protocol::Bytes;
     use chia::protocol::CoinSpend;
@@ -281,6 +282,7 @@ mod tests {
     use ethers::signers::LocalWallet;
     use hex::encode;
     use k256::ecdsa::{Signature as K1Signature, VerifyingKey as K1VerifyingKey};
+    use rstest::rstest;
 
     // we really have to expose this in chia-sdk-test
     macro_rules! assert_puzzle_hash {
@@ -399,8 +401,10 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_p2_eip712_message() -> anyhow::Result<()> {
+    #[rstest]
+    #[case::successful_spend(true)]
+    #[case::incorrect_signed_hash(false)]
+    fn test_p2_eip712_message(#[case] correct_signed_hash: bool) -> anyhow::Result<()> {
         let signing_key = SigningKey::random(&mut thread_rng());
         let wallet: LocalWallet = signing_key.into();
 
@@ -423,8 +427,14 @@ mod tests {
             clvm_quote!(Conditions::new().reserve_fee(1337)).to_clvm(&mut ctx.allocator)?;
         let delegated_solution_ptr = ctx.allocator.nil();
 
-        let hash_to_sign =
-            layer.hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into());
+        let hash_to_sign: Bytes32 = if correct_signed_hash {
+            layer.hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into())
+        } else {
+            layer
+                .hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into())
+                .tree_hash()
+                .into()
+        };
 
         let signature_og: K1Signature = wallet.signer().sign_prehash(&hash_to_sign.to_vec())?;
         let signature: EthSignatureBytes = signature_og.to_vec().try_into().unwrap();
@@ -435,8 +445,7 @@ mod tests {
             coin,
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
-                signed_hash: layer
-                    .hash_to_sign(coin.coin_id(), ctx.tree_hash(delegated_puzzle_ptr).into()),
+                signed_hash: hash_to_sign,
                 signature: signature.to_vec().into(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,
@@ -457,7 +466,20 @@ mod tests {
         let result = verifier.verify_prehash(msg.as_ref(), &sig);
         assert!(result.is_ok());
 
-        sim.spend_coins(ctx.take(), &[])?;
+        if correct_signed_hash {
+            sim.spend_coins(ctx.take(), &[])?;
+        } else {
+            assert_eq!(
+                sim.spend_coins(ctx.take(), &[])
+                    .err()
+                    .unwrap()
+                    .to_string()
+                    .split(": ")
+                    .last()
+                    .unwrap(),
+                "clvm raise"
+            );
+        }
 
         Ok(())
     }
