@@ -4,19 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hex-literal = "0.4.1"
 chia = "0.15.0"
-ethers = { version = "2.0.14"}
 k256 = { version = "0.13.4", features = ["ecdsa"] }
 hex = "0.4.3"
-sha2 = "0.10.8"
-ecdsa = "0.16.9"
-chia-wallet-sdk = "0.17.2"
-clvmr = "0.9.1"
+chia-wallet-sdk = "0.18.0"
 
 [patch.crates-io]
+chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "14a92994d00a4feeecba1aa18d3bb3055d961260" }
 clvmr = { git = "https://github.com/Chia-Network/clvm_rs", rev = "ad539f504ade075262ac1754a9e0010c2789255f" }
-chia-wallet-sdk = { git = "https://github.com/xch-dev/chia-wallet-sdk", rev = "52eea05468f84cd9122cf074e8b5c04d0d91ccda" }
 
 [dev-dependencies]
 anyhow = "1.0.86"

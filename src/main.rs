@@ -1,14 +1,13 @@
-mod driver;
-
 use chia::{
     clvm_traits::{clvm_quote, ToClvm},
     consensus::consensus_constants::TEST_CONSTANTS,
     protocol::Bytes32,
 };
-use chia_wallet_sdk::{Conditions, Layer, Simulator, SpendContext};
-pub use driver::*;
+use chia_wallet_sdk::{
+    Conditions, Layer, P2Eip712MessageLayer, P2Eip712MessageSolution, Simulator, SpendContext,
+};
 use hex::encode;
-use k256::ecdsa::{Signature as K1Signature, VerifyingKey as K1VerifyingKey};
+use k256::ecdsa::{Signature, VerifyingKey};
 use std::io::{self, Write};
 
 fn main() {
@@ -31,14 +30,14 @@ fn main() {
         return;
     };
 
-    let pk = K1VerifyingKey::from_sec1_bytes(&uncompressed_pk).unwrap();
+    let pk = VerifyingKey::from_sec1_bytes(&uncompressed_pk).unwrap();
     println!("Public key (compressed): 0x{:}", encode(pk.to_sec1_bytes()));
 
     println!("Creating 31337-amount coin for you to spend...");
 
-    let layer = P2Eip712MessageLayer::new(
-        TEST_CONSTANTS.genesis_challenge,
+    let layer = P2Eip712MessageLayer::from_genesis_challenge(
         pk.to_sec1_bytes().to_vec().try_into().unwrap(),
+        TEST_CONSTANTS.genesis_challenge,
     );
     let coin_puzzle_reveal = layer.construct_puzzle(ctx).unwrap();
     let coin_puzzle_hash = ctx.tree_hash(coin_puzzle_reveal);
@@ -71,7 +70,7 @@ fn main() {
 
     let hex_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
     let sig = hex::decode(hex_str).unwrap();
-    let signature = K1Signature::from_slice(&sig[..64]).unwrap();
+    let signature = Signature::from_slice(&sig[..64]).unwrap();
     println!("Signature: 0x{:}", encode(signature.to_vec()));
 
     println!("Spending the coin...");
@@ -83,7 +82,7 @@ fn main() {
             P2Eip712MessageSolution {
                 my_id: coin.coin_id(),
                 signed_hash: msg_hash,
-                signature: signature.to_vec().into(),
+                signature: signature.to_vec().try_into().unwrap(),
                 delegated_puzzle: delegated_puzzle_ptr,
                 delegated_solution: delegated_solution_ptr,
             },
