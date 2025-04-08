@@ -10,6 +10,8 @@ export default function Home() {
   const { isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData()
 
+  console.log({ isConnected })
+
   const [pk, setPk] = useState('');
   const [sig, setSig] = useState('');
   const [coinId, setCoinId] = useState('');
@@ -28,6 +30,7 @@ export default function Home() {
           <button
             className="mt-2 px-4 py-2 w-64 border-2 border-green-500 hover:bg-green-500 hover:text-black font-medium rounded-xl text-green-500"
             onClick={async () => {
+              console.log('before sign')
               let sig = await signTypedDataAsync({
                 domain: {},
                 types: {
@@ -40,6 +43,7 @@ export default function Home() {
                   message: "Hello, Chia!"
                 }
               })
+              console.log('after sign')
 
               const msgHash = _TypedDataEncoder.hash({}, {
                 Text: [
@@ -76,7 +80,8 @@ export default function Home() {
               let domain =  {
                 name: "Chia Coin Spend",
                 version: "1",
-                salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                // salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                salt: "0xccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb"
               };
               let types = {
                 ChiaCoinSpend: [
@@ -96,7 +101,8 @@ export default function Home() {
                 domain: {
                   name: "Chia Coin Spend",
                   version: "1",
-                  salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  // salt: "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  salt: "0xccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb"
                 },
                 types,
                 primaryType: "ChiaCoinSpend",
