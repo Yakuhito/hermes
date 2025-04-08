@@ -1,16 +1,18 @@
 use chia::{
     clvm_traits::{clvm_quote, ToClvm},
     consensus::consensus_constants::TEST_CONSTANTS,
-    protocol::Bytes32,
+    protocol::{Bytes32, Coin},
 };
 use chia_wallet_sdk::{
-    Conditions, Layer, P2Eip712MessageLayer, P2Eip712MessageSolution, Simulator, SpendContext,
+    encode_address, Conditions, Layer, P2Eip712MessageLayer, P2Eip712MessageSolution, Simulator,
+    SpendContext, MAINNET_CONSTANTS,
 };
 use hex::encode;
 use k256::ecdsa::{Signature, VerifyingKey};
 use std::io::{self, Write};
 
 fn main() {
+    let mainnet = true;
     println!("Hello, Chia! Setting things up...");
 
     let ctx = &mut SpendContext::new();
@@ -37,12 +39,40 @@ fn main() {
 
     let layer = P2Eip712MessageLayer::from_genesis_challenge(
         pk.to_sec1_bytes().to_vec().try_into().unwrap(),
-        TEST_CONSTANTS.genesis_challenge,
+        if mainnet {
+            MAINNET_CONSTANTS.genesis_challenge
+        } else {
+            TEST_CONSTANTS.genesis_challenge
+        },
     );
     let coin_puzzle_reveal = layer.construct_puzzle(ctx).unwrap();
     let coin_puzzle_hash = ctx.tree_hash(coin_puzzle_reveal);
 
-    let coin = sim.new_coin(coin_puzzle_hash.into(), 1337);
+    println!("Coin puzzle hash: 0x{:}", encode(coin_puzzle_hash));
+    println!(
+        "Coin address: {:}",
+        encode_address(
+            coin_puzzle_hash.into(),
+            if mainnet { "xch" } else { "txch" }
+        )
+        .unwrap()
+    );
+
+    let coin = if !mainnet {
+        sim.new_coin(coin_puzzle_hash.into(), 1337)
+    } else {
+        print!("On-chain coin parent id: ");
+        let mut input = String::new();
+        io::stdout().flush().unwrap(); // Flush to ensure prompt is displayed
+        io::stdin().read_line(&mut input).unwrap();
+        let hex_str = input.trim();
+        let Ok(parent_id) = hex::decode(hex_str.replace("0x", "")) else {
+            eprintln!("Invalid parent id {}", hex_str);
+            return;
+        };
+        let parent_id = Bytes32::new(parent_id.to_vec().try_into().unwrap());
+        Coin::new(parent_id, coin_puzzle_hash.into(), 1337)
+    };
 
     let delegated_puzzle_ptr = clvm_quote!(Conditions::new().reserve_fee(1337))
         .to_clvm(&mut ctx.allocator)
@@ -89,9 +119,13 @@ fn main() {
         )
         .unwrap();
 
-    ctx.insert(coin_spend);
-
-    sim.spend_coins(ctx.take(), &[]).unwrap();
+    if !mainnet {
+        ctx.insert(coin_spend);
+        sim.spend_coins(ctx.take(), &[]).unwrap();
+    } else {
+        println!("Coin spend: {:?}", coin_spend);
+        println!("Signature: {:?}", chia::bls::Signature::default());
+    }
 
     println!("Spend successful! Yay!");
 }
